@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Naturelits ES · Tracking PPC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Paleta marca Naturelits — verde esmeralda + crema (coherente con el Análisis 360) */
+  --naranja:#1F6F5C; --naranja-2:#2E8B76; --naranja-pal:#E6F0EA; --naranja-bd:#BCDCCD;
+  --negro:#16231D; --tinta:#243029; --blanco:#F4F1EA; --papel:#FBFAF6;
+  --verde:#1B6B2F; --verde-bg:#E3F0E5; --rojo:#C0473F; --rojo-bg:#FBEAE8;
+  --ambar:#8a6d00; --ambar-bg:#FBF3DA; --gris:#7d8580; --linea:#e4e0d6;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:'IBM Plex Sans',sans-serif; color:var(--tinta);
+  background:var(--blanco);
+  background-image:radial-gradient(circle at 12% 8%, #1f6f5c14 0, transparent 40%),
+                   radial-gradient(circle at 88% 4%, #2e8b760f 0, transparent 35%);
+  line-height:1.55; -webkit-font-smoothing:antialiased;
+}
+.num{font-family:'IBM Plex Mono',monospace; font-variant-numeric:tabular-nums}
+.wrap{max-width:1180px; margin:0 auto; padding:0 24px}
+
+/* ── Header ── */
+header{padding:48px 0 28px; border-bottom:3px solid var(--negro)}
+.brandrow{display:flex; justify-content:space-between; align-items:flex-end; gap:24px; flex-wrap:wrap}
+.kicker{font-size:.72rem; font-weight:600; letter-spacing:.22em; text-transform:uppercase; color:var(--naranja); margin-bottom:6px}
+h1{font-family:'Fraunces',serif; font-weight:900; font-size:clamp(2.2rem,5vw,3.6rem); line-height:.98; color:var(--negro); letter-spacing:-.02em}
+h1 span{color:var(--naranja)}
+.sub{font-size:.95rem; color:var(--gris); margin-top:8px}
+.status{display:inline-flex; align-items:center; gap:7px; font-size:.74rem; font-weight:600; padding:6px 12px; border-radius:99px; border:1px solid var(--linea); background:var(--papel)}
+.dot{width:8px; height:8px; border-radius:50%; background:var(--gris)}
+.dot.live{background:var(--verde); box-shadow:0 0 0 3px #1b6b2f22}
+.dot.local{background:var(--ambar)}
+
+/* ── Resumen ejecutivo (dark) ── */
+.exec{background:var(--negro); color:#e8efe9; border-radius:16px; padding:30px 32px; margin:32px 0 10px; position:relative; overflow:hidden; border-bottom:0}
+.exec::before{content:''; position:absolute; right:-50px; top:-50px; width:200px; height:200px; border-radius:50%; background:radial-gradient(circle,#2e8b7640,transparent 70%)}
+.exec .ek{font-size:.7rem; font-weight:600; letter-spacing:.2em; text-transform:uppercase; color:#7fc7b0; margin-bottom:10px; position:relative}
+.exec h2{color:#fff; font-family:'Fraunces',serif; font-weight:600; font-size:clamp(1.4rem,3vw,1.9rem); margin-bottom:14px; position:relative; border:0}
+.exec p{font-size:.93rem; line-height:1.62; color:#cfe0d6; max-width:780px; position:relative}
+.exec b{color:#fff; font-weight:600}
+.exec .hl{color:#9fe0c4; font-weight:600}
+
+/* ── Section ── */
+section{padding:40px 0; border-bottom:1px solid var(--linea)}
+.shead{display:flex; align-items:baseline; gap:14px; margin-bottom:22px}
+.snum{font-family:'Fraunces',serif; font-weight:900; font-size:1.1rem; color:var(--naranja-bd)}
+h2{font-family:'Fraunces',serif; font-weight:600; font-size:1.5rem; color:var(--negro); letter-spacing:-.01em}
+.snote{font-size:.82rem; color:var(--gris); margin-left:auto; max-width:340px; text-align:right}
+
+/* ── KPI cards ── */
+.kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px}
+.kpi{background:var(--papel); border:1px solid var(--linea); border-radius:14px; padding:18px 18px 16px; position:relative; overflow:hidden; opacity:0; transform:translateY(12px); animation:rise .5s forwards}
+.kpi::before{content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--naranja)}
+.kpi .lbl{font-size:.68rem; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--gris)}
+.kpi .val{font-family:'IBM Plex Mono',monospace; font-size:1.85rem; font-weight:600; color:var(--negro); margin:6px 0 2px; letter-spacing:-.02em}
+.kpi .delta{font-size:.78rem; font-weight:600; font-family:'IBM Plex Mono',monospace}
+.up{color:var(--verde)} .down{color:var(--rojo)} .flat{color:var(--gris)}
+@keyframes rise{to{opacity:1; transform:none}}
+
+/* ── Familias ── */
+.fam{display:flex; flex-direction:column; gap:11px}
+.frow{display:grid; grid-template-columns:92px 1fr auto; align-items:center; gap:14px}
+.fname{font-weight:600; font-size:.92rem}
+.fbar-track{height:26px; background:#f1f1f1; border-radius:7px; overflow:hidden; position:relative}
+.fbar{height:100%; border-radius:7px; background:linear-gradient(90deg,var(--naranja),var(--naranja-2)); width:0; transition:width 1.1s cubic-bezier(.2,.8,.2,1)}
+.fbar.muted{background:linear-gradient(90deg,#c9c9c9,#b3b3b3)}
+.fmeta{font-family:'IBM Plex Mono',monospace; font-size:.76rem; color:var(--gris); text-align:right; white-space:nowrap}
+.fmeta b{color:var(--negro); font-size:.9rem}
+.deficit{display:inline-block; font-size:.66rem; font-weight:600; color:var(--ambar); background:var(--ambar-bg); padding:2px 7px; border-radius:6px; margin-left:6px; letter-spacing:.02em; text-transform:uppercase}
+
+/* ── Tabla campañas ── */
+.tbl{width:100%; border-collapse:collapse; font-size:.86rem}
+.tbl th{text-align:left; font-size:.68rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--gris); padding:0 12px 10px; border-bottom:2px solid var(--negro)}
+.tbl td{padding:13px 12px; border-bottom:1px solid var(--linea)}
+.tbl tr:hover td{background:var(--naranja-pal)}
+.tbl .cn{font-weight:600; color:var(--negro)}
+.tbl .num{text-align:right}
+.pill{display:inline-block; font-size:.7rem; font-weight:600; padding:3px 9px; border-radius:99px}
+.p-on{color:var(--verde); background:var(--verde-bg)}
+.p-off{color:var(--gris); background:#eee}
+.roas{font-weight:600}
+.roas-hi{color:var(--verde)} .roas-mid{color:var(--ambar)}
+
+/* ── Acciones kanban ── */
+.kanban{display:grid; grid-template-columns:repeat(3,1fr); gap:16px}
+.col{background:var(--papel); border:1px solid var(--linea); border-radius:14px; padding:16px}
+.col h3{font-size:.78rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; margin-bottom:14px; display:flex; align-items:center; gap:8px; padding-bottom:10px; border-bottom:1px solid var(--linea)}
+.cnt{font-family:'IBM Plex Mono',monospace; font-size:.7rem; color:#fff; background:var(--negro); border-radius:99px; padding:1px 8px; margin-left:auto}
+.col.done h3{color:var(--verde)} .col.done .cnt{background:var(--verde)}
+.col.todo h3{color:var(--naranja)} .col.todo .cnt{background:var(--naranja)}
+.col.wait h3{color:var(--ambar)} .col.wait .cnt{background:var(--ambar)}
+.card{border-left:3px solid var(--linea); padding:8px 0 8px 12px; margin-bottom:12px}
+.col.done .card{border-color:var(--verde)} .col.todo .card{border-color:var(--naranja)} .col.wait .card{border-color:var(--ambar)}
+.card .ca{font-weight:600; font-size:.86rem; color:var(--negro)}
+.card .cd{font-size:.78rem; color:var(--gris); margin-top:2px}
+.card .cf{display:inline-block; margin-top:6px; padding:2px 8px; font-family:'IBM Plex Mono',monospace; font-size:.66rem; color:var(--verde); background:var(--verde-bg); border-radius:5px; font-weight:600}
+.card .cc{font-size:.7rem; color:var(--naranja); font-weight:600; margin-top:3px}
+
+/* ── Serene oportunidad ── */
+.ser{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px}
+.scard{background:var(--papel); border:1px solid var(--naranja-bd); border-radius:12px; padding:14px}
+.scard .stam{font-family:'Fraunces',serif; font-weight:900; font-size:1.25rem; color:var(--negro)}
+.scard .sasin{font-family:'IBM Plex Mono',monospace; font-size:.72rem; color:var(--gris)}
+.scard .ssales{font-family:'IBM Plex Mono',monospace; font-size:1rem; font-weight:600; color:var(--naranja); margin-top:6px}
+.scard .stag{font-size:.66rem; color:var(--verde); font-weight:600}
+
+footer{padding:34px 0 60px; color:var(--gris); font-size:.78rem; display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px}
+footer b{color:var(--tinta)}
+
+@media(max-width:760px){
+  .kanban{grid-template-columns:1fr}
+  .frow{grid-template-columns:80px 1fr; }
+  .fmeta{grid-column:2; text-align:left}
+  .snote{display:none}
+  .tbl .hide-m{display:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brandrow">
+      <div>
+        <div class="kicker">Naturelits · España · Amazon Ads</div>
+        <h1>Tracking <span>PPC</span></h1>
+        <div class="sub" id="periodo">Semana del — · actualizado —</div>
+      </div>
+      <div class="status"><span class="dot" id="dot"></span><span id="statusTxt">Cargando…</span></div>
+    </div>
+  </header>
+
+  <section class="exec">
+    <div class="ek">Resumen ejecutivo · línea base</div>
+    <h2>La cuenta crece sola — ahora la dirigimos al segmento alto</h2>
+    <p id="execBody">—</p>
+  </section>
+
+  <section id="s-kpi">
+    <div class="shead">
+      <span class="snum">01</span><h2>Resultados de la semana</h2>
+      <div class="snote">Línea base · variación WoW (pre-optimización)</div>
+    </div>
+    <div class="kpis" id="kpis"></div>
+  </section>
+
+  <section id="s-fam">
+    <div class="shead">
+      <span class="snum">02</span><h2>Negocio · WoW por familia</h2>
+      <div class="snote">Ventas totales, CVR y BuyBox · 25-31 vs 18-24 may</div>
+    </div>
+    <div class="kpis" id="bizkpis" style="margin-bottom:24px"></div>
+    <div class="fam" id="fam"></div>
+  </section>
+
+  <section id="s-camp">
+    <div class="shead">
+      <span class="snum">03</span><h2>Campañas · dónde metemos la aguja</h2>
+      <div class="snote">Eficiencia por campaña (ROAS / ACoS lifetime)</div>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="tbl" id="camp">
+        <thead><tr>
+          <th>Campaña</th><th>Tipo</th><th>Estado</th>
+          <th class="num">Budget/d</th><th class="num">ROAS</th>
+          <th class="num hide-m">ACoS</th><th class="num hide-m">Ventas</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="s-acc">
+    <div class="shead">
+      <span class="snum">04</span><h2>Acciones</h2>
+      <div class="snote">Qué se hizo · qué sigue · qué depende del cliente</div>
+    </div>
+    <div class="kanban" id="kanban"></div>
+  </section>
+
+  <section id="s-ser">
+    <div class="shead">
+      <span class="snum">05</span><h2>Oportunidad Serene · top activos</h2>
+      <div class="snote">57% de las ventas · top ASINs por ventas 30d · palanca de PPC inmediata</div>
+    </div>
+    <div class="ser" id="ser"></div>
+  </section>
+
+  <footer>
+    <div>Fuente: Business Report + Bulk Export · <b>Naturelits ES</b></div>
+    <div id="ftDate">—</div>
+  </footer>
+
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════
+   MODO LIVE: pegá el ID del Google Sheet acá para leer en vivo.
+   Vacío = usa los datos embebidos de abajo (demo a prueba de fallos).
+   Las pestañas del Sheet deben llamarse: WoW_KPIs, Campanas_ASINs, Acciones_PPC
+   ════════════════════════════════════════════════════════════════ */
+const SHEET_ID = "1gsanYhxoCEWS2k8FgiF6DbVFC6Eyne9bXqK5U1xegW4"; // ej: "1AbC...xyz"
+
+/* ── Datos embebidos (reales, al 03-jun-2026) ── */
+const DATA = {
+  wow: [
+    {Semana:"18-24 may", Spend:392, Sales:3199, ACoS:"12.3%", ROAS:8.2, TACoS:"4.0%", Orders:17, VentasTot:9901, CVR:"1.87%", BuyBox:"97.5%", Impressions:216621, Clicks:900, CTR:"0.42%"},
+    {Semana:"25-31 may", Spend:422, Sales:3582, ACoS:"11.8%", ROAS:8.5, TACoS:"3.2%", Orders:23, VentasTot:13316, CVR:"2.33%", BuyBox:"97.9%", Impressions:209900, Clicks:884, CTR:"0.42%"}
+  ],
+  familias: [
+    {fam:"Serene", foco:true,  sTW:7562, sPW:5360, u:36, cvr:"1.4%", bb:"98%"},
+    {fam:"Moon",   foco:false, deficit:true, sTW:2738, sPW:2054, u:30, cvr:"4.0%", bb:"99%"},
+    {fam:"Orbit",  foco:false, deficit:true, sTW:1560, sPW:899,  u:23, cvr:"6.6%", bb:"99%"},
+    {fam:"Xstar",  foco:true,  sTW:836,  sPW:1409, u:5,  cvr:"8.5%", bb:"94%"},
+    {fam:"Nature", foco:true,  sTW:620,  sPW:0,    u:3,  cvr:"1.3%", bb:"96%"},
+    {fam:"Palace", foco:true,  sTW:0,    sPW:180,  u:0,  cvr:"0%",   bb:"98%"}
+  ],
+  campanas: [
+    {nombre:"SP-AUTOBulk", tipo:"AUTO", estado:"enabled", budget:30, roas:14.8, acos:"6.8%", ventas:83265},
+    {nombre:"DD Serene 150x190", tipo:"SP", estado:"enabled", budget:15, roas:11.3, acos:"8.9%", ventas:10276},
+    {nombre:"AUTO-MUELLES", tipo:"AUTO", estado:"enabled", budget:25, roas:10.0, acos:"10.0%", ventas:17724},
+    {nombre:"SD remarketing 135x190", tipo:"SD", estado:"enabled", budget:5, roas:7.1, acos:"14.1%", ventas:15002},
+    {nombre:"SB categorías", tipo:"SB", estado:"enabled", budget:20, roas:6.7, acos:"14.9%", ventas:21577},
+    {nombre:"AUTOSeg", tipo:"AUTO", estado:"enabled", budget:20, roas:null, acos:"—", ventas:null},
+    {nombre:"auto_150x190", tipo:"AUTO", estado:"enabled", budget:15, roas:null, acos:"—", ventas:null},
+    {nombre:"DD 90x190", tipo:"SP", estado:"paused", budget:null, roas:4.2, acos:"24.1%", ventas:7282},
+    {nombre:"BLACKFRIDAY SER-PAL-NAT", tipo:"SP", estado:"paused", budget:null, roas:null, acos:"—", ventas:null},
+    {nombre:"Harvest Exact", tipo:"SP", estado:"paused", budget:null, roas:null, acos:"—", ventas:null}
+  ],
+  acciones: [
+    {fecha:"2026-06-01", campana:"SP (varias)", accion:"Negativizar", detalle:"Ola 1 · 25 negativos exact (€381 recuperable)", afecta:"Varias familias", estado:"Hecho"},
+    {fecha:"2026-06-02", campana:"SP (varias)", accion:"Negativizar", detalle:"Ola 2 · 28 negativos exact", afecta:"Varias familias", estado:"Hecho"},
+    {fecha:"2026-06-02", campana:"Harvest", accion:"Harvest", detalle:"8 keywords a Exact/Phrase", afecta:"Familias foco", estado:"Hecho"},
+    {fecha:"2026-06-03", campana:"Estrategia", accion:"Pivote a foco", detalle:"Serene/Nature/Palace/Xstar · Moon/Orbit sin PPC", afecta:"Serene/Nature/Palace/Xstar", estado:"Hecho"},
+    {fecha:"2026-06-03", campana:"DD 90x190", accion:"Pausar", detalle:"90x190 deficitario por margen · alineado con directiva", afecta:"Moon/Orbit 90x190", estado:"Hecho"},
+    {fecha:"2026-06-04", campana:"AUTO-MUELLES", accion:"Quitar negativo", detalle:"b0cnvykzl1 es Serene Hybrid propio, vivo (€6.078/30d)", afecta:"Serene 135x190 · B0CNVYKZL1", estado:"Pendiente"},
+    {fecha:"2026-06-04", campana:"BLACKFRIDAY", accion:"Reactivar", detalle:"€8/d cuando Serene esté 100% live", afecta:"Serene/Palace/Nature", estado:"Pendiente"},
+    {fecha:"2026-06-04", campana:"PAT", accion:"Crear", detalle:"Sobre familias foco (no existía)", afecta:"Familias foco", estado:"Pendiente"},
+    {fecha:"2026-06-04", campana:"Harvest", accion:"Reestructurar", detalle:"Product Ads sobre foco y reactivar", afecta:"Familias foco", estado:"Pendiente"},
+    {fecha:"2026-06-04", campana:"Hero", accion:"Escalar budget", detalle:"IS <5% con ROAS 10-15x = techo de crecimiento", afecta:"AUTOBulk/DD Serene/Muelles", estado:"Pendiente"},
+    {fecha:"2026-06-03", campana:"Serene", accion:"Reactivar listings", detalle:"3 SKUs Serene cerrados (135/90/150x190)", afecta:"B0F9PZSYD4 · B0F9PGG5LH · B0F9PCRZVD", estado:"Esperando-Roger"},
+    {fecha:"2026-06-03", campana:"Precios", accion:"Update precios", detalle:"Expiración masiva 2-jun · siguen como están", afecta:"Catálogo completo", estado:"Esperando-Roger"}
+  ],
+  serene: [
+    {tam:"150x190", asin:"B0CNW4TFG1", sales:6602, tag:"Activo · top #1"},
+    {tam:"135x190", asin:"B0CNVYKZL1", sales:6078, tag:"Activo · Hybrid"},
+    {tam:"160x200", asin:"B0CNW16ZNM", sales:3639, tag:"Activo"},
+    {tam:"135x190", asin:"B0CNVZMDKC", sales:2910, tag:"Activo"},
+    {tam:"150x190", asin:"B0CNVYGWL6", sales:2652, tag:"Activo · Optima"}
+  ]
+};
+
+/* ── Utils ── */
+const eur = n => n==null ? "—" : "€"+Math.round(n).toLocaleString("es-ES");
+const pctChg = (cur,prev) => prev ? (cur/prev-1)*100 : 0;
+const arrow = d => d>0.05?"↑":d<-0.05?"↓":"→";
+const cls = (d,goodUp=true) => Math.abs(d)<0.05?"flat":((d>0)===goodUp?"up":"down");
+
+/* ── CSV parser (gviz) ── */
+function parseCSV(txt){
+  const rows=[]; let f=[],cur="",q=false;
+  for(let i=0;i<txt.length;i++){const c=txt[i];
+    if(q){ if(c=='"'){ if(txt[i+1]=='"'){cur+='"';i++} else q=false } else cur+=c }
+    else { if(c=='"')q=true; else if(c==',' ){f.push(cur);cur=""} else if(c=='\n'){f.push(cur);rows.push(f);f=[];cur=""} else if(c!='\r')cur+=c }
+  }
+  if(cur!==""||f.length){f.push(cur);rows.push(f)}
+  const head=rows.shift().map(h=>h.trim());
+  return rows.filter(r=>r.some(x=>x!=="")).map(r=>{const o={};head.forEach((h,i)=>o[h]=(r[i]||"").trim());return o});
+}
+const gvizURL = sheet => `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheet)}`;
+
+async function fetchSheet(name){
+  const r = await fetch(gvizURL(name));
+  if(!r.ok) throw new Error(name+" "+r.status);
+  return parseCSV(await r.text());
+}
+
+/* ── Render ── */
+function setStatus(mode){
+  const d=document.getElementById("dot"), t=document.getElementById("statusTxt");
+  if(mode==="live"){d.className="dot live"; t.textContent="Datos en vivo · Google Sheet"}
+  else {d.className="dot local"; t.textContent="Datos locales · snapshot"}
+}
+function renderPeriodo(wow){
+  const last = wow[wow.length-1];
+  document.getElementById("periodo").textContent = "Línea base · semana "+last.Semana+" 2026 · pre-optimización";
+  const now = new Date().toLocaleDateString("es-ES",{day:"numeric",month:"long",year:"numeric"});
+  document.getElementById("ftDate").innerHTML = "Generado el <b>"+now+"</b>";
+}
+function renderKPIs(wow){
+  const c=wow[wow.length-1], p=wow[wow.length-2]||c;
+  const toN=v=>parseFloat(String(v).replace(/[€%\s]/g,"").replace(",","."))||0;
+  const items=[
+    {lbl:"Ventas Ads",  val:eur(toN(c.Sales)),  d:pctChg(toN(c.Sales),toN(p.Sales)),  up:true},
+    {lbl:"Inversión",   val:eur(toN(c.Spend)),  d:pctChg(toN(c.Spend),toN(p.Spend)),  up:true},
+    {lbl:"ROAS",        val:toN(c.ROAS).toFixed(1)+"x", d:pctChg(toN(c.ROAS),toN(p.ROAS)), up:true},
+    {lbl:"ACoS",        val:c.ACoS,             d:pctChg(toN(c.ACoS),toN(p.ACoS)),    up:false},
+    {lbl:"TACoS",       val:c.TACoS,            d:pctChg(toN(c.TACoS),toN(p.TACoS)),  up:false},
+    {lbl:"Órdenes",     val:toN(c.Orders),      d:pctChg(toN(c.Orders),toN(p.Orders)),up:true}
+  ];
+  document.getElementById("kpis").innerHTML = items.map((k,i)=>`
+    <div class="kpi" style="animation-delay:${i*70}ms">
+      <div class="lbl">${k.lbl}</div>
+      <div class="val">${k.val}</div>
+      <div class="delta ${cls(k.d,k.up)}">${arrow(k.d)} ${Math.abs(k.d).toFixed(1)}% <span style="color:var(--gris);font-weight:400">WoW</span></div>
+    </div>`).join("");
+}
+function renderFam(fam){
+  const max=Math.max(...fam.map(f=>f.sTW));
+  document.getElementById("fam").innerHTML = fam.map(f=>{
+    const d=pctChg(f.sTW,f.sPW);
+    const dtxt=f.sPW?`<span class="${cls(d,true)}">${arrow(d)}${Math.abs(d).toFixed(0)}%</span>`:`<span class="up">nuevo</span>`;
+    return `<div class="frow">
+      <div class="fname">${f.fam}${f.deficit?'<span class="deficit">defic.</span>':''}</div>
+      <div class="fbar-track"><div class="fbar ${f.foco?'':'muted'}" data-w="${(f.sTW/max*100).toFixed(1)}"></div></div>
+      <div class="fmeta"><b>${eur(f.sTW)}</b> ${dtxt} · ${f.u}u · CVR ${f.cvr} · BB ${f.bb}</div>
+    </div>`;}).join("");
+  requestAnimationFrame(()=>document.querySelectorAll(".fbar").forEach(b=>b.style.width=b.dataset.w+"%"));
+}
+function renderBizKPIs(wow){
+  const c=wow[wow.length-1],p=wow[wow.length-2]||c;
+  const toN=v=>parseFloat(String(v).replace(/[€%\s]/g,"").replace(",","."))||0;
+  const items=[
+    {lbl:"Ventas totales", val:eur(toN(c.VentasTot)), d:pctChg(toN(c.VentasTot),toN(p.VentasTot)), up:true},
+    {lbl:"CVR",            val:c.CVR,                  d:pctChg(toN(c.CVR),toN(p.CVR)),             up:true},
+    {lbl:"BuyBox",         val:c.BuyBox,               d:pctChg(toN(c.BuyBox),toN(p.BuyBox)),       up:true}
+  ];
+  document.getElementById("bizkpis").innerHTML=items.map((k,i)=>`
+    <div class="kpi" style="animation-delay:${i*70}ms"><div class="lbl">${k.lbl}</div>
+      <div class="val">${k.val}</div>
+      <div class="delta ${cls(k.d,k.up)}">${arrow(k.d)} ${Math.abs(k.d).toFixed(1)}% <span style="color:var(--gris);font-weight:400">WoW</span></div></div>`).join("");
+}
+function renderExec(){
+  document.getElementById("execBody").innerHTML=`En la línea base (25-31 may, antes de la optimización) las <b>ventas totales subieron +34,5% WoW</b> (€9.901 → €13.316), con el <b>CVR de 1,87% a 2,33%</b> y <span class="hl">BuyBox sano al 97,9%</span>. El advertising es eficiente: <b>ROAS 8,5x · ACoS 11,8% · TACoS 3,2%</b> — el ads pesa poco, la cuenta vende mayormente orgánico. <b>Serene lidera con el 57% de las ventas.</b> Desde el 2-jun la gestión se reorientó al segmento alto (Serene/Nature/Palace/Xstar) y se cortó gasto en 90x190 deficitario. <span class="hl">El primer WoW que mide esta gestión llega la próxima semana</span> — y vigilamos el efecto del cambio de precios del 2-jun sobre el BuyBox.`;
+}
+function renderCamp(c){
+  const roasCls=r=>r==null?"":r>=10?"roas-hi":r>=6?"roas-mid":"";
+  document.querySelector("#camp tbody").innerHTML = c.map(x=>`
+    <tr>
+      <td class="cn">${x.nombre}</td>
+      <td>${x.tipo}</td>
+      <td><span class="pill ${x.estado=='enabled'?'p-on':'p-off'}">${x.estado=='enabled'?'activa':'pausada'}</span></td>
+      <td class="num">${x.budget?'€'+x.budget:'—'}</td>
+      <td class="num roas ${roasCls(x.roas)}">${x.roas?x.roas.toFixed(1)+'x':'—'}</td>
+      <td class="num hide-m">${x.acos}</td>
+      <td class="num hide-m">${eur(x.ventas)}</td>
+    </tr>`).join("");
+}
+function renderKanban(acc){
+  const groups={Hecho:[],Pendiente:[],"Esperando-Roger":[]};
+  acc.forEach(a=>{(groups[a.estado]||(groups[a.estado]=[])).push(a)});
+  const col=(key,title,cssc)=>{
+    const items=groups[key]||[];
+    return `<div class="col ${cssc}"><h3>${title}<span class="cnt">${items.length}</span></h3>
+      ${items.map(a=>`<div class="card"><div class="ca">${a.accion} · ${a.campana}</div><div class="cd">${a.detalle}</div>${a.afecta?`<div class="cf">${a.afecta}</div>`:""}<div class="cc">${a.fecha}</div></div>`).join("")}</div>`;
+  };
+  document.getElementById("kanban").innerHTML =
+    col("Hecho","Hecho","done")+col("Pendiente","Por hacer","todo")+col("Esperando-Roger","Espera cliente","wait");
+}
+function renderSerene(s){
+  document.getElementById("ser").innerHTML = s.map(x=>`
+    <div class="scard">
+      <div class="stam">${x.tam}</div>
+      <div class="sasin">${x.asin}</div>
+      <div class="ssales">${eur(x.sales)}</div>
+      <div class="stag">${x.tag}</div>
+    </div>`).join("");
+}
+
+/* ── Boot ── */
+async function boot(){
+  let d = DATA, mode="local";
+  if(SHEET_ID){
+    try{
+      const [wow,camp,acc] = await Promise.all([
+        fetchSheet("WoW_KPIs"), fetchSheet("Campanas_ASINs"), fetchSheet("Acciones_PPC")
+      ]);
+      // mapeo mínimo desde el Sheet live (mantiene embebidos para familias/serene si faltan)
+      if(wow.length) d = {...DATA, wow:wow};
+      if(acc.length) d.acciones = acc.map(r=>({fecha:r.Fecha,campana:r["Campaña"]||r.Campana,accion:r["Acción"]||r.Accion,detalle:r.Detalle,estado:r.Estado}));
+      mode="live";
+    }catch(e){ console.warn("Live falló, uso snapshot:",e); }
+  }
+  setStatus(mode);
+  renderPeriodo(d.wow);
+  renderExec();
+  renderKPIs(d.wow);
+  renderBizKPIs(d.wow);
+  renderFam(d.familias);
+  renderCamp(d.campanas);
+  renderKanban(d.acciones);
+  renderSerene(d.serene);
+}
+boot();
+</script>
+</body>
+</html>
