@@ -58,6 +58,17 @@ h1 span{color:var(--naranja)}
 @keyframes fadeIn{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
 @media(max-width:640px){.tabs{overflow-x:auto; flex-wrap:nowrap} .tab{padding:10px 13px; font-size:.85rem}}
 
+/* ── Tabla WoW ── */
+.wt{width:100%; border-collapse:collapse; font-size:.92rem}
+.wt th{text-align:right; font-size:.7rem; text-transform:uppercase; letter-spacing:.05em; color:var(--gris); font-weight:700; padding:10px 14px; border-bottom:2px solid var(--negro)}
+.wt th:first-child{text-align:left}
+.wt td{padding:11px 14px; border-bottom:1px solid var(--linea); text-align:right; font-family:'IBM Plex Mono',monospace}
+.wt td:first-child{text-align:left; font-family:inherit; font-weight:600; color:var(--negro)}
+.wt tr:last-child td{border-bottom:0}
+.wt .d-up{color:var(--verde); font-weight:700}
+.wt .d-down{color:var(--rojo); font-weight:700}
+.wt .d-flat{color:var(--gris)}
+
 /* ── Section ── */
 section{padding:40px 0; border-bottom:1px solid var(--linea)}
 .shead{display:flex; align-items:baseline; gap:14px; margin-bottom:22px}
@@ -151,6 +162,7 @@ footer b{color:var(--tinta)}
   <nav class="tabs" id="tabs">
     <button class="tab active" data-target="resumen">Resumen</button>
     <button class="tab" data-target="resultados">Resultados</button>
+    <button class="tab" data-target="comparativa">Comparativa</button>
     <button class="tab" data-target="negocio">Negocio</button>
     <button class="tab" data-target="campanas">Campañas</button>
     <button class="tab" data-target="acciones">Acciones</button>
@@ -169,6 +181,14 @@ footer b{color:var(--tinta)}
       <div class="snote">Línea base · variación WoW (pre-optimización)</div>
     </div>
     <div class="kpis" id="kpis"></div>
+  </section>
+
+  <section class="panel" data-tab="comparativa">
+    <div class="shead">
+      <span class="snum">WoW</span><h2>Comparativa semana vs semana</h2>
+      <div class="snote">Todas las métricas · semana anterior vs semana actual</div>
+    </div>
+    <div id="wowtable"></div>
   </section>
 
   <section id="s-fam" class="panel" data-tab="negocio">
@@ -357,6 +377,43 @@ function renderBizKPIs(wow){
       <div class="val">${k.val}</div>
       <div class="delta ${cls(k.d,k.up)}">${arrow(k.d)} ${Math.abs(k.d).toFixed(1)}% <span style="color:var(--gris);font-weight:400">WoW</span></div></div>`).join("");
 }
+function renderWoW(wow){
+  const a=wow[wow.length-2]||wow[wow.length-1], b=wow[wow.length-1];
+  const toN=v=>parseFloat(String(v).replace(/[€%\s]/g,"").replace(",","."))||0;
+  const rows=[
+    {l:"Inversión",      k:"Spend",          f:"eur", good:0},
+    {l:"Ventas Ads",     k:"Ad_Sales",       f:"eur", good:1},
+    {l:"Ventas totales", k:"Ventas_Totales", f:"eur", good:1},
+    {l:"Órdenes",        k:"Orders",         f:"num", good:1},
+    {l:"ROAS",           k:"ROAS",           f:"x",   good:1},
+    {l:"ACoS",           k:"ACoS",           f:"pct", good:-1, pp:1},
+    {l:"TACoS",          k:"TACoS",          f:"pct", good:-1, pp:1},
+    {l:"CVR",            k:"CVR",            f:"pct", good:1,  pp:1},
+    {l:"BuyBox",         k:"BuyBox",         f:"pct", good:1,  pp:1},
+    {l:"Impresiones",    k:"Impressions",    f:"num", good:0},
+    {l:"Clicks",         k:"Clicks",         f:"num", good:0},
+    {l:"CTR",            k:"CTR",            f:"pct", good:0,  pp:1}
+  ];
+  const fmt=(val,f)=>{
+    const n=toN(val);
+    if(f==="eur") return eur(n);
+    if(f==="x")   return n.toFixed(1)+"x";
+    if(f==="num") return n.toLocaleString("es-ES");
+    if(f==="pct") return String(val).includes("%")?String(val):n+"%";
+    return val;
+  };
+  const html=rows.map(r=>{
+    const av=a[r.k], bv=b[r.k], na=toN(av), nb=toN(bv);
+    let d, dtxt;
+    if(r.pp){ d=nb-na; dtxt=(d>0?"+":"")+d.toFixed(1).replace(".",",")+"pp"; }
+    else { d=na?((nb-na)/Math.abs(na)*100):0; dtxt=(d>0?"+":"")+d.toFixed(1).replace(".",",")+"%"; }
+    const dir=d>0?1:d<0?-1:0;
+    const cls=(r.good===0||dir===0)?"d-flat":(dir===r.good?"d-up":"d-down");
+    return `<tr><td>${r.l}</td><td>${fmt(av,r.f)}</td><td>${fmt(bv,r.f)}</td><td class="${cls}">${dtxt}</td></tr>`;
+  }).join("");
+  document.getElementById("wowtable").innerHTML=
+    `<table class="wt"><thead><tr><th>Métrica</th><th>${a.Semana}</th><th>${b.Semana}</th><th>Δ</th></tr></thead><tbody>${html}</tbody></table>`;
+}
 function renderExec(){
   document.getElementById("execBody").innerHTML=`En la línea base (25-31 may, antes de la optimización) las <b>ventas totales subieron +34,5% WoW</b> (€9.901 → €13.316), con el <b>CVR de 1,87% a 2,33%</b> y <span class="hl">BuyBox sano al 97,9%</span>. El advertising es eficiente: <b>ROAS 8,5x · ACoS 11,8% · TACoS 3,2%</b> — el ads pesa poco, la cuenta vende mayormente orgánico. <b>Serene lidera con el 57% de las ventas.</b> Desde el 2-jun la gestión se reorientó al segmento alto (Serene/Nature/Palace/Xstar) y se cortó gasto en 90x190 deficitario. <span class="hl">El primer WoW que mide esta gestión llega la próxima semana</span> — y vigilamos el efecto del cambio de precios del 2-jun sobre el BuyBox.`;
 }
@@ -413,6 +470,7 @@ async function boot(){
   renderExec();
   renderKPIs(d.wow);
   renderBizKPIs(d.wow);
+  renderWoW(d.wow);
   renderFam(d.familias);
   renderCamp(d.campanas);
   renderKanban(d.acciones);
