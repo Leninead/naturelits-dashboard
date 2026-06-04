@@ -212,8 +212,8 @@ const SHEET_ID = "1gsanYhxoCEWS2k8FgiF6DbVFC6Eyne9bXqK5U1xegW4"; // ej: "1AbC...
 /* ── Datos embebidos (reales, al 03-jun-2026) ── */
 const DATA = {
   wow: [
-    {Semana:"18-24 may", Spend:392, Sales:3199, ACoS:"12.3%", ROAS:8.2, TACoS:"4.0%", Orders:17, VentasTot:9901, CVR:"1.87%", BuyBox:"97.5%", Impressions:216621, Clicks:900, CTR:"0.42%"},
-    {Semana:"25-31 may", Spend:422, Sales:3582, ACoS:"11.8%", ROAS:8.5, TACoS:"3.2%", Orders:23, VentasTot:13316, CVR:"2.33%", BuyBox:"97.9%", Impressions:209900, Clicks:884, CTR:"0.42%"}
+    {Semana:"18-24 may", Spend:392, Ad_Sales:3199, ACoS:"12.3%", ROAS:8.2, TACoS:"4.0%", Orders:17, Ventas_Totales:9901, CVR:"1.87%", BuyBox:"97.5%", Impressions:216621, Clicks:900, CTR:"0.42%"},
+    {Semana:"25-31 may", Spend:422, Ad_Sales:3582, ACoS:"11.8%", ROAS:8.5, TACoS:"3.2%", Orders:23, Ventas_Totales:13316, CVR:"2.33%", BuyBox:"97.9%", Impressions:209900, Clicks:884, CTR:"0.42%"}
   ],
   familias: [
     {fam:"Serene", foco:true,  sTW:7562, sPW:5360, u:36, cvr:"1.4%", bb:"98%"},
@@ -299,7 +299,7 @@ function renderKPIs(wow){
   const c=wow[wow.length-1], p=wow[wow.length-2]||c;
   const toN=v=>parseFloat(String(v).replace(/[€%\s]/g,"").replace(",","."))||0;
   const items=[
-    {lbl:"Ventas Ads",  val:eur(toN(c.Sales)),  d:pctChg(toN(c.Sales),toN(p.Sales)),  up:true},
+    {lbl:"Ventas Ads",  val:eur(toN(c.Ad_Sales)),  d:pctChg(toN(c.Ad_Sales),toN(p.Ad_Sales)),  up:true},
     {lbl:"Inversión",   val:eur(toN(c.Spend)),  d:pctChg(toN(c.Spend),toN(p.Spend)),  up:true},
     {lbl:"ROAS",        val:toN(c.ROAS).toFixed(1)+"x", d:pctChg(toN(c.ROAS),toN(p.ROAS)), up:true},
     {lbl:"ACoS",        val:c.ACoS,             d:pctChg(toN(c.ACoS),toN(p.ACoS)),    up:false},
@@ -329,7 +329,7 @@ function renderBizKPIs(wow){
   const c=wow[wow.length-1],p=wow[wow.length-2]||c;
   const toN=v=>parseFloat(String(v).replace(/[€%\s]/g,"").replace(",","."))||0;
   const items=[
-    {lbl:"Ventas totales", val:eur(toN(c.VentasTot)), d:pctChg(toN(c.VentasTot),toN(p.VentasTot)), up:true},
+    {lbl:"Ventas totales", val:eur(toN(c.Ventas_Totales)), d:pctChg(toN(c.Ventas_Totales),toN(p.Ventas_Totales)), up:true},
     {lbl:"CVR",            val:c.CVR,                  d:pctChg(toN(c.CVR),toN(p.CVR)),             up:true},
     {lbl:"BuyBox",         val:c.BuyBox,               d:pctChg(toN(c.BuyBox),toN(p.BuyBox)),       up:true}
   ];
