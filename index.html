@@ -166,7 +166,6 @@ footer b{color:var(--tinta)}
     <button class="tab" data-target="negocio">Negocio</button>
     <button class="tab" data-target="campanas">Campañas</button>
     <button class="tab" data-target="acciones">Acciones</button>
-    <button class="tab" data-target="serene">Serene</button>
   </nav>
 
   <section class="exec panel active" data-tab="resumen">
@@ -223,14 +222,6 @@ footer b{color:var(--tinta)}
       <div class="snote">Qué se hizo · qué sigue · qué depende del cliente</div>
     </div>
     <div class="kanban" id="kanban"></div>
-  </section>
-
-  <section id="s-ser" class="panel" data-tab="serene">
-    <div class="shead">
-      <span class="snum">05</span><h2>Oportunidad Serene · top activos</h2>
-      <div class="snote">57% de las ventas · top ASINs por ventas 30d · palanca de PPC inmediata</div>
-    </div>
-    <div class="ser" id="ser"></div>
   </section>
 
   <footer>
@@ -474,7 +465,6 @@ async function boot(){
   renderFam(d.familias);
   renderCamp(d.campanas);
   renderKanban(d.acciones);
-  renderSerene(d.serene);
 }
 boot();
 
