@@ -122,6 +122,8 @@ h2{font-family:'Fraunces',serif; font-weight:600; font-size:1.5rem; color:var(--
 .col.done .card{border-color:var(--verde)} .col.todo .card{border-color:var(--naranja)} .col.wait .card{border-color:var(--ambar)}
 .card .ca{font-weight:600; font-size:.86rem; color:var(--negro)}
 .card .cd{font-size:.78rem; color:var(--gris); margin-top:2px}
+.card .can{font-size:.74rem; color:var(--gris); font-style:italic; line-height:1.45; margin-top:7px; padding-left:9px; border-left:2px solid var(--naranja-bd)}
+.card .can b{display:block; font-style:normal; font-weight:700; font-size:.64rem; letter-spacing:.04em; text-transform:uppercase; color:var(--naranja); margin-bottom:2px}
 .card .cf{display:inline-block; margin-top:6px; padding:2px 8px; font-family:'IBM Plex Mono',monospace; font-size:.66rem; color:var(--verde); background:var(--verde-bg); border-radius:5px; font-weight:600}
 .card .cc{font-size:.7rem; color:var(--naranja); font-weight:600; margin-top:3px}
 
@@ -266,16 +268,16 @@ const DATA = {
     {nombre:"Harvest Exact", tipo:"SP", estado:"paused", budget:null, roas:null, acos:"—", ventas:null}
   ],
   acciones: [
-    {fecha:"2026-06-01", campana:"SP (varias)", accion:"Negativizar", detalle:"Ola 1 · 25 negativos exact (€381 recuperable)", afecta:"Varias familias", estado:"Hecho"},
+    {fecha:"2026-06-01", campana:"SP (varias)", accion:"Negativizar", detalle:"Ola 1 · 25 negativos exact (€381 recuperable)", afecta:"Varias familias", estado:"Hecho", analisis:"25 términos con clicks por encima del threshold por CVR y 0 órdenes: €381 de spend sin retorno en 30d."},
     {fecha:"2026-06-02", campana:"SP (varias)", accion:"Negativizar", detalle:"Ola 2 · 28 negativos exact", afecta:"Varias familias", estado:"Hecho"},
     {fecha:"2026-06-02", campana:"Harvest", accion:"Harvest", detalle:"8 keywords a Exact/Phrase", afecta:"Familias foco", estado:"Hecho"},
-    {fecha:"2026-06-03", campana:"Estrategia", accion:"Pivote a foco", detalle:"Serene/Nature/Palace/Xstar · Moon/Orbit sin PPC", afecta:"Serene/Nature/Palace/Xstar", estado:"Hecho"},
-    {fecha:"2026-06-03", campana:"DD 90x190", accion:"Pausar", detalle:"90x190 deficitario por margen · alineado con directiva", afecta:"Moon/Orbit 90x190", estado:"Hecho"},
-    {fecha:"2026-06-04", campana:"AUTO-MUELLES", accion:"Quitar negativo", detalle:"b0cnvykzl1 es Serene Hybrid propio, vivo (€6.078/30d)", afecta:"Serene 135x190 · B0CNVYKZL1", estado:"Pendiente"},
+    {fecha:"2026-06-03", campana:"Estrategia", accion:"Pivote a foco", detalle:"Serene/Nature/Palace/Xstar · Moon/Orbit sin PPC", afecta:"Serene/Nature/Palace/Xstar", estado:"Hecho", analisis:"Serene/Nature/Palace/Xstar concentran el ROAS rentable; Moon/Orbit no sostienen el ACoS objetivo, no merecen budget de PPC."},
+    {fecha:"2026-06-03", campana:"DD 90x190", accion:"Pausar", detalle:"90x190 deficitario por margen · alineado con directiva", afecta:"Moon/Orbit 90x190", estado:"Hecho", analisis:"El margen unitario del 90x190 no cubre el coste publicitario: ni con ROAS aceptable el formato es rentable a nivel de P&L."},
+    {fecha:"2026-06-04", campana:"AUTO-MUELLES", accion:"Quitar negativo", detalle:"b0cnvykzl1 es Serene Hybrid propio, vivo (€6.078/30d)", afecta:"Serene 135x190 · B0CNVYKZL1", estado:"Pendiente", analisis:"El ASIN negativizado es producto propio activo (€6.078/30d): el negativo estaba bloqueando ventas reales, no tráfico ajeno."},
     {fecha:"2026-06-04", campana:"BLACKFRIDAY", accion:"Reactivar", detalle:"€8/d cuando Serene esté 100% live", afecta:"Serene/Palace/Nature", estado:"Pendiente"},
     {fecha:"2026-06-04", campana:"PAT", accion:"Crear", detalle:"Sobre familias foco (no existía)", afecta:"Familias foco", estado:"Pendiente"},
     {fecha:"2026-06-04", campana:"Harvest", accion:"Reestructurar", detalle:"Product Ads sobre foco y reactivar", afecta:"Familias foco", estado:"Pendiente"},
-    {fecha:"2026-06-04", campana:"Hero", accion:"Escalar budget", detalle:"IS <5% con ROAS 10-15x = techo de crecimiento", afecta:"AUTOBulk/DD Serene/Muelles", estado:"Pendiente"},
+    {fecha:"2026-06-04", campana:"Hero", accion:"Escalar budget", detalle:"IS <5% con ROAS 10-15x = techo de crecimiento", afecta:"AUTOBulk/DD Serene/Muelles", estado:"Pendiente", analisis:"Impression Share <5% con ROAS 10-15x = demanda rentable sin captar; el cuello de botella es el budget, no la eficiencia."},
     {fecha:"2026-06-03", campana:"Serene", accion:"Reactivar listings", detalle:"3 SKUs Serene cerrados (135/90/150x190)", afecta:"B0F9PZSYD4 · B0F9PGG5LH · B0F9PCRZVD", estado:"Esperando-Roger"},
     {fecha:"2026-06-03", campana:"Precios", accion:"Update precios", detalle:"Expiración masiva 2-jun · siguen como están", afecta:"Catálogo completo", estado:"Esperando-Roger"}
   ],
@@ -427,7 +429,7 @@ function renderKanban(acc){
   const col=(key,title,cssc)=>{
     const items=groups[key]||[];
     return `<div class="col ${cssc}"><h3>${title}<span class="cnt">${items.length}</span></h3>
-      ${items.map(a=>`<div class="card"><div class="ca">${a.accion} · ${a.campana}</div><div class="cd">${a.detalle}</div>${a.afecta?`<div class="cf">${a.afecta}</div>`:""}<div class="cc">${a.fecha}</div></div>`).join("")}</div>`;
+      ${items.map(a=>`<div class="card"><div class="ca">${a.accion} · ${a.campana}</div><div class="cd">${a.detalle}</div>${a.analisis?`<div class="can"><b>🔍 Análisis</b>${a.analisis}</div>`:""}${a.afecta?`<div class="cf">${a.afecta}</div>`:""}<div class="cc">${a.fecha}</div></div>`).join("")}</div>`;
   };
   document.getElementById("kanban").innerHTML =
     col("Hecho","Hecho","done")+col("Pendiente","Por hacer","todo")+col("Esperando-Roger","Espera cliente","wait");
@@ -452,7 +454,7 @@ async function boot(){
       ]);
       // mapeo mínimo desde el Sheet live (mantiene embebidos para familias/serene si faltan)
       if(wow.length) d = {...DATA, wow:wow};
-      if(acc.length) d.acciones = acc.map(r=>({fecha:r.Fecha,campana:r["Campaña"]||r.Campana,accion:r["Acción"]||r.Accion,detalle:r.Detalle,estado:r.Estado}));
+      if(acc.length) d.acciones = acc.map(r=>({fecha:r.Fecha,campana:r["Campaña"]||r.Campana,accion:r["Acción"]||r.Accion,detalle:r.Detalle,estado:r.Estado,analisis:r["Análisis"]||r.Analisis}));
       mode="live";
     }catch(e){ console.warn("Live falló, uso snapshot:",e); }
   }
