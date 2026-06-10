@@ -860,7 +860,8 @@ function renderFunnel(rows){
 /* ── Resultados · por modelo (acordeón) ── */
 function renderModelos(rows){
   const el=document.getElementById("modelos");
-  if(!rows||!rows.length){ el.innerHTML=`<h3 class="subhead">Por modelo</h3>`+emptyState(); return; }
+  rows=cleanRows(rows);
+  if(!rows.length){ el.innerHTML=`<h3 class="subhead">Por modelo</h3>`+emptyState(); return; }
   const fams={}, order=[];
   rows.forEach(r=>{const f=(r.Familia||"—").trim()||"—"; if(!fams[f]){fams[f]=[];order.push(f);} fams[f].push(r);});
   const famSum=f=>fams[f].reduce((s,r)=>s+(numES(r.Ventas)||0),0);
