@@ -183,6 +183,44 @@ footer b{color:var(--tinta)}
 .fnt-fill{height:100%; background:var(--naranja); border-radius:6px; width:0; transition:width .9s ease}
 .emptyst{padding:30px; text-align:center; color:var(--gris); background:var(--papel); border:1px dashed var(--linea); border-radius:12px; font-size:.88rem}
 @media(max-width:760px){ .funnel-wrap{grid-template-columns:1fr} }
+
+/* ── Nav 2 bloques ── */
+.navwrap{display:flex; gap:34px; flex-wrap:wrap; margin:26px 0; border-bottom:1px solid var(--linea); position:sticky; top:0; background:var(--papel); z-index:20; padding-top:8px}
+.navgrp{display:flex; flex-direction:column}
+.naveyebrow{font-size:.6rem; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--naranja-bd); padding:0 6px 5px}
+.navgrp-tabs{display:flex; gap:2px; flex-wrap:wrap}
+.tab[disabled]{color:#bcc0ba; cursor:not-allowed; border:1px dashed var(--linea); border-radius:7px 7px 0 0; opacity:.75}
+.tab[disabled]:hover{color:#bcc0ba}
+@media(max-width:640px){.navwrap{gap:16px} .navgrp-tabs{overflow-x:auto; flex-wrap:nowrap}}
+
+/* ── Resultados · acordeón por modelo ── */
+.subhead{font-family:'Fraunces',serif; font-weight:600; font-size:1.15rem; color:var(--negro); margin:0 0 16px}
+.modwrap{display:flex; flex-direction:column; gap:10px}
+.acc{border:1px solid var(--linea); border-radius:12px; overflow:hidden; background:var(--papel)}
+.acc-h{display:flex; align-items:center; gap:12px; padding:14px 16px; cursor:pointer; user-select:none}
+.acc-h:hover{background:var(--naranja-pal)}
+.acc-h .acc-fam{font-family:'Fraunces',serif; font-weight:600; color:var(--negro); font-size:1rem}
+.acc-h .acc-n{font-size:.68rem; color:var(--gris); background:#eee; border-radius:99px; padding:1px 9px}
+.acc-h .acc-sum{font-family:'IBM Plex Mono',monospace; font-size:.86rem; font-weight:600; color:var(--naranja); margin-left:auto}
+.acc-h .chev{transition:transform .25s; color:var(--gris); font-size:.8rem}
+.acc.open .chev{transform:rotate(90deg)}
+.acc-body{display:none}
+.acc.open .acc-body{display:block}
+.modtbl{width:100%; border-collapse:collapse; font-size:.84rem}
+.modtbl th{text-align:right; font-size:.62rem; text-transform:uppercase; letter-spacing:.05em; color:var(--gris); font-weight:700; padding:8px 16px; border-top:1px solid var(--linea)}
+.modtbl th:first-child{text-align:left}
+.modtbl td{padding:10px 16px; border-top:1px solid var(--linea); text-align:right; font-family:'IBM Plex Mono',monospace}
+.modtbl td:first-child{text-align:left; font-family:inherit; font-weight:600; color:var(--negro)}
+.mst{font-size:.64rem; font-weight:600; padding:2px 8px; border-radius:99px}
+.mst-on{color:var(--verde); background:var(--verde-bg)}
+.mst-react{color:var(--ambar); background:var(--ambar-bg)}
+.mst-other{color:var(--gris); background:#eee}
+
+/* ── Glosario ── */
+.glos{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px}
+.gcard{background:var(--papel); border:1px solid var(--linea); border-radius:12px; padding:16px 18px}
+.gcard .gt{font-weight:700; color:var(--negro); font-size:.95rem; margin-bottom:5px}
+.gcard .gd{font-size:.84rem; color:var(--tinta); line-height:1.5}
 </style>
 </head>
 <body>
@@ -199,16 +237,28 @@ footer b{color:var(--tinta)}
     </div>
   </header>
 
-  <nav class="tabs" id="tabs">
-    <button class="tab active" data-target="resumen">Resumen</button>
-    <button class="tab" data-target="resultados">Resultados</button>
-    <button class="tab" data-target="comparativa">Comparativa</button>
-    <button class="tab" data-target="negocio">Negocio</button>
-    <button class="tab" data-target="campanas">Campañas</button>
-    <button class="tab" data-target="acciones">Acciones</button>
-    <button class="tab" data-target="funnel">Funnel</button>
-    <button class="tab" data-target="precios">Precios</button>
-    <button class="tab" data-target="diario">Diario</button>
+  <nav class="navwrap" id="tabs">
+    <div class="navgrp">
+      <div class="naveyebrow">PPC</div>
+      <div class="navgrp-tabs">
+        <button class="tab active" data-target="resumen">Resumen</button>
+        <button class="tab" data-target="resultados">Resultados</button>
+        <button class="tab" data-target="comparativa">Comparativa</button>
+        <button class="tab" data-target="funnel">Funnel</button>
+        <button class="tab" data-target="campanas">Campañas</button>
+        <button class="tab" data-target="acciones">Acciones</button>
+      </div>
+    </div>
+    <div class="navgrp">
+      <div class="naveyebrow">Negocio y cuenta</div>
+      <div class="navgrp-tabs">
+        <button class="tab" data-target="negocio">Negocio</button>
+        <button class="tab" data-target="precios">Precios</button>
+        <button class="tab" data-target="diario">Diario</button>
+        <button class="tab" data-target="health" disabled title="Próximamente">Account Health</button>
+        <button class="tab" data-target="glosario">Glosario</button>
+      </div>
+    </div>
   </nav>
 
   <section class="exec panel active" data-tab="resumen">
@@ -223,6 +273,11 @@ footer b{color:var(--tinta)}
       <div class="snote">Línea base · variación WoW (pre-optimización)</div>
     </div>
     <div class="kpis" id="kpis"></div>
+    <div class="modwrap" id="modelos" style="margin-top:32px"></div>
+    <div id="serSec" style="margin-top:32px">
+      <h3 class="subhead">Oportunidad Serene · top activos</h3>
+      <div class="ser" id="ser"></div>
+    </div>
   </section>
 
   <section class="panel" data-tab="comparativa">
@@ -303,6 +358,14 @@ footer b{color:var(--tinta)}
       <div class="snote">Registro cronológico de lo que se hace en la cuenta</div>
     </div>
     <div class="feed" id="diario"></div>
+  </section>
+
+  <section class="panel" data-tab="glosario">
+    <div class="shead">
+      <span class="snum">08</span><h2>Glosario</h2>
+      <div class="snote">Qué significa cada término, en lenguaje claro</div>
+    </div>
+    <div class="glos" id="glosario"></div>
   </section>
 
   <footer>
@@ -632,6 +695,37 @@ function renderFunnel(rows){
   });
 }
 
+/* ── Resultados · por modelo (acordeón) ── */
+function renderModelos(rows){
+  const el=document.getElementById("modelos");
+  if(!rows||!rows.length){ el.innerHTML=`<h3 class="subhead">Por modelo</h3>`+emptyState(); return; }
+  const fams={}, order=[];
+  rows.forEach(r=>{const f=(r.Familia||"—").trim()||"—"; if(!fams[f]){fams[f]=[];order.push(f);} fams[f].push(r);});
+  const famSum=f=>fams[f].reduce((s,r)=>s+(numES(r.Ventas)||0),0);
+  order.sort((a,b)=>famSum(b)-famSum(a));
+  const stcls=e=>{const k=(e||"").trim().toLowerCase(); if(/reactiv/.test(k))return"mst-react"; if(/activ/.test(k))return"mst-on"; return"mst-other";};
+  const html=order.map(f=>{
+    const open = f.toLowerCase()==="serene" ? " open" : "";
+    const n=fams[f].length;
+    const body=fams[f].map(r=>`<tr>
+      <td>${[r.Modelo,r.Medida].filter(x=>x&&String(x).trim()).join(" · ")||r.ASIN||"—"}</td>
+      <td>${eur(numES(r.Ventas))}</td>
+      <td>${(r.Unidades&&String(r.Unidades).trim())||"—"}</td>
+      <td>${pctES(r.CVR)}</td>
+      <td>${pctES(r.BuyBox)}</td>
+      <td><span class="mst ${stcls(r.Estado)}">${(r.Estado||"").trim()||"—"}</span></td></tr>`).join("");
+    return `<div class="acc${open}">
+      <div class="acc-h"><span class="chev">▸</span><span class="acc-fam">${f}</span>
+        <span class="acc-n">${n} ${n===1?"modelo":"modelos"}</span>
+        <span class="acc-sum">${eur(famSum(f))}</span></div>
+      <div class="acc-body"><table class="modtbl">
+        <thead><tr><th>Modelo</th><th>Ventas</th><th>Uds</th><th>CVR</th><th>BuyBox</th><th>Estado</th></tr></thead>
+        <tbody>${body}</tbody></table></div></div>`;
+  }).join("");
+  el.innerHTML=`<h3 class="subhead">Por modelo</h3>`+html;
+  el.querySelectorAll(".acc-h").forEach(h=>h.addEventListener("click",()=>h.parentElement.classList.toggle("open")));
+}
+
 /* ── Boot ── */
 async function boot(){
   let d = {...DATA};
@@ -657,6 +751,8 @@ async function boot(){
   renderPeriodo(d.wow);
   renderExec();
   renderKPIs(d.wow);
+  renderModelos(d.modelos);
+  renderSerene(d.serene);
   renderBizKPIs(d.wow);
   renderWoW(d.wow);
   renderFam(d.familias);
