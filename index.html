@@ -427,7 +427,7 @@ function renderKanban(acc){
   const groups={Hecho:[],Pendiente:[],"Esperando-Roger":[]};
   acc.forEach(a=>{(groups[a.estado]||(groups[a.estado]=[])).push(a)});
   const col=(key,title,cssc)=>{
-    const items=groups[key]||[];
+    const items=(groups[key]||[]).slice().sort((a,b)=>(b.fecha||"").localeCompare(a.fecha||""));
     return `<div class="col ${cssc}"><h3>${title}<span class="cnt">${items.length}</span></h3>
       ${items.map(a=>`<div class="card"><div class="ca">${a.accion} · ${a.campana}</div><div class="cd">${a.detalle}</div>${a.analisis?`<div class="can"><b>🔍 Análisis</b>${a.analisis}</div>`:""}${a.afecta?`<div class="cf">${a.afecta}</div>`:""}<div class="cc">${a.fecha}</div></div>`).join("")}</div>`;
   };
