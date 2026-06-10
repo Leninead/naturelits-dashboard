@@ -221,6 +221,26 @@ footer b{color:var(--tinta)}
 .gcard{background:var(--papel); border:1px solid var(--linea); border-radius:12px; padding:16px 18px}
 .gcard .gt{font-weight:700; color:var(--negro); font-size:.95rem; margin-bottom:5px}
 .gcard .gd{font-size:.84rem; color:var(--tinta); line-height:1.5}
+
+/* ── Comparativa · segmented + chart ── */
+.seg{display:inline-flex; gap:2px; background:var(--papel); border:1px solid var(--linea); border-radius:10px; padding:3px; margin-bottom:22px; flex-wrap:wrap}
+.segbtn{appearance:none; border:0; background:transparent; font-family:inherit; font-size:.82rem; font-weight:600; color:var(--gris); padding:7px 14px; border-radius:7px; cursor:pointer; transition:background .2s,color .2s}
+.segbtn:hover:not(:disabled){color:var(--negro)}
+.segbtn.active{background:var(--negro); color:#fff}
+.segbtn:disabled{color:#c2c5be; cursor:not-allowed; border:1px dashed var(--linea)}
+.chartbox{background:var(--papel); border:1px solid var(--linea); border-radius:14px; padding:20px}
+.chleg{display:flex; gap:20px; font-size:.78rem; margin-bottom:12px; color:var(--gris)}
+.chleg span{display:inline-flex; align-items:center; gap:7px}
+.chdot{width:12px; height:3px; border-radius:2px; display:inline-block}
+
+/* ── Recomendaciones banner ── */
+.reco{margin-top:24px; border-radius:12px; padding:16px 20px; position:relative; z-index:1}
+.reco h4{font-family:'Fraunces',serif; font-weight:600; font-size:1.08rem; margin-bottom:9px}
+.reco ul{margin:0; padding-left:19px}
+.reco li{font-size:.87rem; line-height:1.55; margin:3px 0}
+.reco-up{background:#e3f0e5} .reco-up h4{color:var(--verde)} .reco-up li{color:#1d3324}
+.reco-down{background:#fbf3da} .reco-down h4{color:var(--ambar)} .reco-down li{color:#3a3208}
+.reco-flat{background:#ecece6} .reco-flat h4{color:#5f655e} .reco-flat li{color:var(--tinta)}
 </style>
 </head>
 <body>
@@ -265,6 +285,7 @@ footer b{color:var(--tinta)}
     <div class="ek">Resumen ejecutivo · línea base</div>
     <h2>La cuenta crece sola — ahora la dirigimos al segmento alto</h2>
     <p id="execBody">—</p>
+    <div id="recoBanner" class="reco"></div>
   </section>
 
   <section id="s-kpi" class="panel" data-tab="resultados">
@@ -284,6 +305,12 @@ footer b{color:var(--tinta)}
     <div class="shead">
       <span class="snum">WoW</span><h2>Comparativa semana vs semana</h2>
       <div class="snote">Todas las métricas · semana anterior vs semana actual</div>
+    </div>
+    <div class="seg" id="compSeg">
+      <button class="segbtn active" data-mode="wow">Semana (WoW)</button>
+      <button class="segbtn" data-mode="mom">Mes (MoM)</button>
+      <button class="segbtn" data-mode="todo">Todo</button>
+      <button class="segbtn" data-mode="yoy">Año (YoY)</button>
     </div>
     <div id="wowtable"></div>
   </section>
@@ -445,8 +472,9 @@ function numES(v){
   let s=String(v).trim();
   if(s===""||s==="—"||s==="-"||s.toLowerCase()==="n/a") return null;
   s=s.replace(/[€$%\s]/g,"").replace(/x$/i,"");
-  if(s.indexOf(",")>-1 && s.indexOf(".")>-1) s=s.replace(/\./g,"").replace(",",".");
-  else if(s.indexOf(",")>-1) s=s.replace(",",".");
+  if(s.indexOf(",")>-1 && s.indexOf(".")>-1) s=s.replace(/\./g,"").replace(",",".");      // 1.234,56 → 1234.56
+  else if(s.indexOf(",")>-1) s=s.replace(",",".");                                         // 280,34 → 280.34
+  else if(/^-?\d{1,3}(\.\d{3})+$/.test(s)) s=s.replace(/\./g,"");                          // 83.265 → 83265 (es-ES miles)
   const n=parseFloat(s);
   return isNaN(n)?null:n;
 }
@@ -537,42 +565,158 @@ function renderBizKPIs(wow){
       <div class="val">${k.val}</div>
       <div class="delta ${cls(k.d,k.up)}">${arrow(k.d)} ${Math.abs(k.d).toFixed(1)}% <span style="color:var(--gris);font-weight:400">WoW</span></div></div>`).join("");
 }
-function renderWoW(wow){
-  const a=wow[wow.length-2]||wow[wow.length-1], b=wow[wow.length-1];
-  const toN=v=>parseFloat(String(v).replace(/[€%\s]/g,"").replace(",","."))||0;
-  const rows=[
-    {l:"Inversión",      k:"Spend",          f:"eur", good:0},
-    {l:"Ventas Ads",     k:"Ad_Sales",       f:"eur", good:1},
-    {l:"Ventas totales", k:"Ventas_Totales", f:"eur", good:1},
-    {l:"Órdenes",        k:"Orders",         f:"num", good:1},
-    {l:"ROAS",           k:"ROAS",           f:"x",   good:1},
-    {l:"ACoS",           k:"ACoS",           f:"pct", good:-1, pp:1},
-    {l:"TACoS",          k:"TACoS",          f:"pct", good:-1, pp:1},
-    {l:"CVR",            k:"CVR",            f:"pct", good:1,  pp:1},
-    {l:"BuyBox",         k:"BuyBox",         f:"pct", good:1,  pp:1},
-    {l:"Impresiones",    k:"Impressions",    f:"num", good:0},
-    {l:"Clicks",         k:"Clicks",         f:"num", good:0},
-    {l:"CTR",            k:"CTR",            f:"pct", good:0,  pp:1}
-  ];
-  const fmt=(val,f)=>{
-    const n=toN(val);
-    if(f==="eur") return eur(n);
-    if(f==="x")   return n.toFixed(1)+"x";
-    if(f==="num") return n.toLocaleString("es-ES");
-    if(f==="pct") return String(val).includes("%")?String(val):n+"%";
-    return val;
-  };
-  const html=rows.map(r=>{
-    const av=a[r.k], bv=b[r.k], na=toN(av), nb=toN(bv);
+const WROWS=[
+  {l:"Inversión",      k:"Spend",          f:"eur", good:0},
+  {l:"Ventas Ads",     k:"Ad_Sales",       f:"eur", good:1},
+  {l:"Ventas totales", k:"Ventas_Totales", f:"eur", good:1},
+  {l:"Órdenes",        k:"Orders",         f:"num", good:1},
+  {l:"ROAS",           k:"ROAS",           f:"x",   good:1},
+  {l:"ACoS",           k:"ACoS",           f:"pct", good:-1, pp:1},
+  {l:"TACoS",          k:"TACoS",          f:"pct", good:-1, pp:1},
+  {l:"CVR",            k:"CVR",            f:"pct", good:1,  pp:1},
+  {l:"BuyBox",         k:"BuyBox",         f:"pct", good:1,  pp:1},
+  {l:"Impresiones",    k:"Impressions",    f:"num", good:0},
+  {l:"Clicks",         k:"Clicks",         f:"num", good:0},
+  {l:"CTR",            k:"CTR",            f:"pct", good:0,  pp:1}
+];
+const toN0 = v => { const n=numES(v); return n==null?0:n; };
+function fmtVal(val,f){
+  const n=toN0(val);
+  if(f==="eur") return eur(n);
+  if(f==="x")   return n.toFixed(1)+"x";
+  if(f==="num") return n.toLocaleString("es-ES");
+  if(f==="pct") return (val==null||String(val).trim()===""||String(val).trim()==="—")?"—":pctES(val);
+  return val==null?"—":val;
+}
+function compTableHTML(a,b){
+  const html=WROWS.map(r=>{
+    const av=a[r.k], bv=b[r.k], na=toN0(av), nb=toN0(bv);
     let d, dtxt;
     if(r.pp){ d=nb-na; dtxt=(d>0?"+":"")+d.toFixed(1).replace(".",",")+"pp"; }
     else { d=na?((nb-na)/Math.abs(na)*100):0; dtxt=(d>0?"+":"")+d.toFixed(1).replace(".",",")+"%"; }
     const dir=d>0?1:d<0?-1:0;
     const cls=(r.good===0||dir===0)?"d-flat":(dir===r.good?"d-up":"d-down");
-    return `<tr><td>${r.l}</td><td>${fmt(av,r.f)}</td><td>${fmt(bv,r.f)}</td><td class="${cls}">${dtxt}</td></tr>`;
+    return `<tr><td>${r.l}</td><td>${fmtVal(av,r.f)}</td><td>${fmtVal(bv,r.f)}</td><td class="${cls}">${dtxt}</td></tr>`;
   }).join("");
-  document.getElementById("wowtable").innerHTML=
-    `<table class="wt"><thead><tr><th>Métrica</th><th>${a.Semana}</th><th>${b.Semana}</th><th>Δ</th></tr></thead><tbody>${html}</tbody></table>`;
+  return `<table class="wt"><thead><tr><th>Métrica</th><th>${a.Semana}</th><th>${b.Semana}</th><th>Δ</th></tr></thead><tbody>${html}</tbody></table>`;
+}
+function singleTableHTML(r){
+  const html=WROWS.map(w=>`<tr><td>${w.l}</td><td>${fmtVal(r[w.k],w.f)}</td></tr>`).join("");
+  return `<table class="wt"><thead><tr><th>Métrica</th><th>${r.Semana}</th></tr></thead><tbody>${html}</tbody></table>`;
+}
+/* agrupa filas WoW por mes (parsea "18-24 may" → may) y suma/recalcula */
+const MES={ene:"Enero",feb:"Febrero",mar:"Marzo",abr:"Abril",may:"Mayo",jun:"Junio",jul:"Julio",ago:"Agosto",sep:"Septiembre",oct:"Octubre",nov:"Noviembre",dic:"Diciembre"};
+const MESORD=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+function aggMonths(wow){
+  const g={}, ord=[];
+  wow.forEach(r=>{
+    const m=String(r.Semana||"").toLowerCase().match(/(ene|feb|mar|abr|may|jun|jul|ago|sep|set|oct|nov|dic)/);
+    if(!m) return;
+    const k=m[1]==="set"?"sep":m[1];
+    if(!g[k]){ g[k]={Spend:0,Ad_Sales:0,Ventas_Totales:0,Orders:0,Impressions:0,Clicks:0,_cvr:0,_ctr:0,_n:0}; ord.push(k); }
+    const o=g[k];
+    o.Spend+=toN0(r.Spend); o.Ad_Sales+=toN0(r.Ad_Sales); o.Ventas_Totales+=toN0(r.Ventas_Totales);
+    o.Orders+=toN0(r.Orders); o.Impressions+=toN0(r.Impressions); o.Clicks+=toN0(r.Clicks);
+    o._cvr+=toN0(r.CVR); o._ctr+=toN0(r.CTR); o._n++;
+  });
+  ord.sort((a,b)=>MESORD.indexOf(a)-MESORD.indexOf(b));
+  return ord.map(k=>{
+    const o=g[k];
+    return {Semana:MES[k]||k, Spend:o.Spend, Ad_Sales:o.Ad_Sales, Ventas_Totales:o.Ventas_Totales, Orders:o.Orders,
+      Impressions:o.Impressions, Clicks:o.Clicks,
+      ROAS:o.Spend?o.Ad_Sales/o.Spend:0, ACoS:(o.Ad_Sales?o.Spend/o.Ad_Sales*100:0).toFixed(1)+"%", TACoS:"—",
+      CVR:(o._n?o._cvr/o._n:0).toFixed(2)+"%", BuyBox:"—",
+      CTR:(o._n?o._ctr/o._n:0).toFixed(2)+"%"};
+  });
+}
+/* gráfico de línea SVG (sin librerías) */
+function lineChart(wow){
+  const W=720,H=240,pad=40;
+  const vt=wow.map(r=>toN0(r.Ventas_Totales)), ads=wow.map(r=>toN0(r.Ad_Sales));
+  const max=Math.max(...vt,...ads,1);
+  const x=i=>pad+(W-2*pad)*(wow.length<=1?0.5:i/(wow.length-1));
+  const y=v=>H-pad-(H-2*pad)*(v/max);
+  const path=arr=>arr.map((v,i)=>(i?"L":"M")+x(i).toFixed(1)+" "+y(v).toFixed(1)).join(" ");
+  const dots=(arr,c)=>arr.map((v,i)=>`<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="3" fill="${c}"/>`).join("");
+  const xl=wow.map((r,i)=>`<text x="${x(i).toFixed(1)}" y="${H-12}" font-size="9" fill="#7d8580" text-anchor="middle">${r.Semana}</text>`).join("");
+  return `<div class="chartbox">
+    <div class="chleg"><span><i class="chdot" style="background:#1F6F5C"></i>Ventas totales</span><span><i class="chdot" style="background:#c9982f"></i>Ventas Ads</span></div>
+    <svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMidYMid meet">
+      <path d="${path(vt)}" fill="none" stroke="#1F6F5C" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="${path(ads)}" fill="none" stroke="#c9982f" stroke-width="2.5" stroke-linejoin="round"/>
+      ${dots(vt,"#1F6F5C")}${dots(ads,"#c9982f")}${xl}
+    </svg></div>`;
+}
+let COMPWOW=[];
+function renderComparativa(wow){
+  COMPWOW=wow||[];
+  const out=document.getElementById("wowtable");
+  const seg=document.getElementById("compSeg");
+  if(!seg||!out) return;
+  const yoyBtn=seg.querySelector('[data-mode="yoy"]');
+  const yr=new Date().getFullYear();
+  const hasYoY=COMPWOW.some(r=>{const m=String(r.Semana||"").match(/(20\d{2})/); return m && parseInt(m[1],10)<yr;});
+  if(yoyBtn && !hasYoY){ yoyBtn.disabled=true; yoyBtn.title="Disponible al cargar histórico 2025"; }
+  const draw=mode=>{
+    seg.querySelectorAll(".segbtn").forEach(b=>b.classList.toggle("active",b.dataset.mode===mode));
+    if(mode==="wow"){
+      if(COMPWOW.length<1){ out.innerHTML=emptyState(); return; }
+      const a=COMPWOW[COMPWOW.length-2]||COMPWOW[COMPWOW.length-1], b=COMPWOW[COMPWOW.length-1];
+      out.innerHTML = COMPWOW.length<2 ? singleTableHTML(b) : compTableHTML(a,b);
+    } else if(mode==="mom"){
+      const ms=aggMonths(COMPWOW);
+      if(ms.length>=2){ const a=ms[ms.length-2], b={...ms[ms.length-1]}; b.Semana=b.Semana+" (parcial)"; out.innerHTML=compTableHTML(a,b); }
+      else if(ms.length===1){ out.innerHTML=singleTableHTML(ms[0]); }
+      else out.innerHTML=emptyState("Sin datos mensuales todavía");
+    } else if(mode==="todo"){
+      if(COMPWOW.length){ out.innerHTML=lineChart(COMPWOW)+`<div style="margin-top:20px">${compTableHTML(COMPWOW[0],COMPWOW[COMPWOW.length-1])}</div>`; }
+      else out.innerHTML=emptyState();
+    } else { // yoy
+      out.innerHTML=emptyState("Disponible al cargar histórico 2025");
+    }
+  };
+  seg.querySelectorAll(".segbtn").forEach(b=>b.addEventListener("click",()=>{ if(b.disabled)return; draw(b.dataset.mode); }));
+  draw("wow");
+}
+function renderWoW(wow){ renderComparativa(wow); }
+
+/* ── Glosario (cliente) ── */
+const GLOS=[
+  ["ROAS","Por cada € invertido en publicidad, cuántos € de venta vuelven."],
+  ["ACoS","Qué % de la venta se va en publicidad."],
+  ["TACoS","Publicidad sobre el total de ventas de la cuenta — mide la dependencia del ads."],
+  ["CVR","De cada 100 visitas, cuántas compran."],
+  ["BuyBox","% del tiempo que tu oferta es la que se compra con 1 click."],
+  ["CTR","De cada 100 que ven el anuncio, cuántos entran."],
+  ["Impresiones","Veces que el anuncio se mostró."],
+  ["Negativizar","Bloquear búsquedas que gastan sin vender."],
+  ["Harvest","Convertir una búsqueda ganadora en campaña propia."],
+  ["PAT","Anunciarse dentro de la ficha de un competidor."],
+  ["Campaña automática","Amazon decide dónde mostrar — sirve para descubrir."],
+  ["Campaña manual","Nosotros elegimos exactamente dónde aparecer."]
+];
+function renderGlosario(){
+  const el=document.getElementById("glosario");
+  if(!el) return;
+  el.innerHTML=GLOS.map(([t,d])=>`<div class="gcard"><div class="gt">${t}</div><div class="gd">${d}</div></div>`).join("");
+}
+
+/* ── Recomendaciones (banner Resumen) ── */
+function renderRecos(wow){
+  const el=document.getElementById("recoBanner");
+  if(!el) return;
+  if(!wow||wow.length<2){ el.innerHTML=""; el.className="reco"; return; }
+  const cur=toN0(wow[wow.length-1].Ventas_Totales), prev=toN0(wow[wow.length-2].Ventas_Totales);
+  const d=prev?((cur-prev)/prev*100):0;
+  let cls,title,bullets;
+  if(d>5){ cls="reco-up"; title="La cuenta crece — cómo lo aprovechamos";
+    bullets=["Ampliar presupuesto en las campañas más rentables.","Acelerar la entrada en nuevas etapas del funnel.","Preparar los siguientes modelos para publicidad."]; }
+  else if(d<-5){ cls="reco-down"; title="La semana vino más floja — qué activamos";
+    bullets=["Revisar disponibilidad y precio de los modelos principales.","Reforzar las campañas que defienden las ventas actuales.","Pausar lo que no rinde y concentrar el presupuesto."]; }
+  else { cls="reco-flat"; title="Semana estable";
+    bullets=["Mantener la estrategia y seguir midiendo."]; }
+  el.className="reco "+cls;
+  el.innerHTML=`<h4>${title}</h4><ul>${bullets.map(b=>`<li>${b}</li>`).join("")}</ul>`;
 }
 function renderExec(){
   document.getElementById("execBody").innerHTML=`En la línea base (25-31 may, antes de la optimización) las <b>ventas totales subieron +34,5% WoW</b> (€9.901 → €13.316), con el <b>CVR de 1,87% a 2,33%</b> y <span class="hl">BuyBox sano al 97,9%</span>. El advertising es eficiente: <b>ROAS 8,5x · ACoS 11,8% · TACoS 3,2%</b> — el ads pesa poco, la cuenta vende mayormente orgánico. <b>Serene lidera con el 57% de las ventas.</b> Desde el 2-jun la gestión se reorientó al segmento alto (Serene/Nature/Palace/Xstar) y se cortó gasto en 90x190 deficitario. <span class="hl">El primer WoW que mide esta gestión llega la próxima semana</span> — y vigilamos el efecto del cambio de precios del 5-jun sobre el BuyBox.`;
@@ -750,17 +894,19 @@ async function boot(){
   setStatus(mode);
   renderPeriodo(d.wow);
   renderExec();
+  renderRecos(d.wow);
   renderKPIs(d.wow);
   renderModelos(d.modelos);
   renderSerene(d.serene);
   renderBizKPIs(d.wow);
-  renderWoW(d.wow);
+  renderComparativa(d.wow);
   renderFam(d.familias);
   renderCamp(d.campanasView);
   renderKanban(d.acciones);
   renderDiario(d.bitacora);
   renderPrecios(d.precios);
   renderFunnel(d.funnel);
+  renderGlosario();
 }
 boot();
 
