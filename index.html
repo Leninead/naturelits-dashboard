@@ -145,6 +145,44 @@ footer b{color:var(--tinta)}
   .snote{display:none}
   .tbl .hide-m{display:none}
 }
+
+/* ── Diario / Bitácora ── */
+.feed{display:flex; flex-direction:column; gap:12px}
+.fitem{background:var(--papel); border:1px solid var(--linea); border-radius:12px; padding:14px 16px; display:flex; gap:16px; align-items:flex-start}
+.fitem .fdate{font-family:'IBM Plex Mono',monospace; font-size:.74rem; color:var(--gris); white-space:nowrap; padding-top:3px; min-width:84px}
+.fitem .fmsg{font-size:.9rem; color:var(--tinta); flex:1}
+.tpill{display:inline-block; font-size:.62rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; padding:2px 8px; border-radius:6px; margin-bottom:6px}
+.tp-verif{color:var(--verde); background:var(--verde-bg)}
+.tp-opt{color:var(--naranja-2); background:var(--naranja-pal)}
+.tp-hito{color:var(--ambar); background:var(--ambar-bg)}
+.tp-otro{color:var(--gris); background:#eee}
+
+/* ── Precios ── */
+.pricehead{font-size:.92rem; color:var(--negro); font-weight:600; margin-bottom:18px}
+.pri-old{color:var(--gris); text-decoration:line-through; font-family:'IBM Plex Mono',monospace}
+.pri-new{font-weight:700; color:var(--negro); font-family:'IBM Plex Mono',monospace}
+.varpill{display:inline-block; font-size:.7rem; font-weight:600; padding:2px 9px; border-radius:99px; font-family:'IBM Plex Mono',monospace}
+.var-down{color:var(--verde); background:var(--verde-bg)}
+.var-up{color:var(--rojo); background:var(--rojo-bg)}
+.var-flat{color:var(--gris); background:#eee}
+.pricefoot{font-size:.82rem; color:var(--gris); margin-top:16px; font-style:italic}
+
+/* ── Funnel pirámide ── */
+.funnel-wrap{display:grid; grid-template-columns:1fr 190px; gap:30px; align-items:start}
+.fnsub{font-size:.88rem; color:var(--gris); margin-bottom:20px}
+.pyramid{display:flex; flex-direction:column; gap:9px; align-items:center}
+.band{border-radius:8px; padding:11px 14px; text-align:center; color:#fff; font-weight:600; font-size:.84rem; min-height:48px; display:flex; flex-direction:column; justify-content:center; width:8%; transition:width .9s cubic-bezier(.2,.8,.2,1)}
+.band small{font-family:'IBM Plex Mono',monospace; font-weight:500; font-size:.72rem; opacity:.92; display:block; margin-top:2px}
+.band.activo{background:linear-gradient(90deg,var(--naranja),var(--naranja-2))}
+.band.sembrado{background:linear-gradient(90deg,#d6a93a,#c9982f); color:#3a2e07}
+.band.planificado{background:#cfd3cd; color:var(--tinta)}
+.band.bloqueado{background:repeating-linear-gradient(45deg,#e7e6e1,#e7e6e1 7px,#dad9d3 7px,#dad9d3 14px); color:var(--gris); border:1px dashed #c2c2bb}
+.fntargets{display:flex; flex-direction:column; gap:15px}
+.fnt-l{display:flex; justify-content:space-between; color:var(--gris); margin-bottom:5px; font-family:'IBM Plex Mono',monospace; font-size:.72rem}
+.fnt-track{height:8px; background:#eceae3; border-radius:6px; overflow:hidden}
+.fnt-fill{height:100%; background:var(--naranja); border-radius:6px; width:0; transition:width .9s ease}
+.emptyst{padding:30px; text-align:center; color:var(--gris); background:var(--papel); border:1px dashed var(--linea); border-radius:12px; font-size:.88rem}
+@media(max-width:760px){ .funnel-wrap{grid-template-columns:1fr} }
 </style>
 </head>
 <body>
@@ -168,6 +206,9 @@ footer b{color:var(--tinta)}
     <button class="tab" data-target="negocio">Negocio</button>
     <button class="tab" data-target="campanas">Campañas</button>
     <button class="tab" data-target="acciones">Acciones</button>
+    <button class="tab" data-target="funnel">Funnel</button>
+    <button class="tab" data-target="precios">Precios</button>
+    <button class="tab" data-target="diario">Diario</button>
   </nav>
 
   <section class="exec panel active" data-tab="resumen">
@@ -224,6 +265,44 @@ footer b{color:var(--tinta)}
       <div class="snote">Qué se hizo · qué sigue · qué depende del cliente</div>
     </div>
     <div class="kanban" id="kanban"></div>
+  </section>
+
+  <section class="panel" data-tab="funnel">
+    <div class="shead">
+      <span class="snum">05</span><h2>Funnel · embudo de inversión</h2>
+      <div class="snote">Dónde está el presupuesto hoy y hacia dónde se mueve</div>
+    </div>
+    <div class="fnsub">Dónde está invertido el presupuesto hoy — y hacia dónde lo movemos</div>
+    <div class="funnel-wrap">
+      <div class="pyramid" id="funnelPyr"></div>
+      <div class="fntargets" id="funnelTgt"></div>
+    </div>
+  </section>
+
+  <section class="panel" data-tab="precios">
+    <div class="shead">
+      <span class="snum">06</span><h2>Precios</h2>
+      <div class="snote">Nueva estructura aplicada el 5 de junio</div>
+    </div>
+    <div class="pricehead">Nueva estructura de precios · aplicada el 5 de junio</div>
+    <div style="overflow-x:auto">
+      <table class="tbl" id="precios">
+        <thead><tr>
+          <th>Modelo</th><th class="num">Antes</th><th class="num">Ahora</th>
+          <th class="num">Variación</th><th class="hide-m">Nota</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="pricefoot">El efecto en ventas se mide en la Comparativa semana a semana.</div>
+  </section>
+
+  <section class="panel" data-tab="diario">
+    <div class="shead">
+      <span class="snum">07</span><h2>Diario · bitácora de gestión</h2>
+      <div class="snote">Registro cronológico de lo que se hace en la cuenta</div>
+    </div>
+    <div class="feed" id="diario"></div>
   </section>
 
   <footer>
@@ -292,9 +371,33 @@ const DATA = {
 
 /* ── Utils ── */
 const eur = n => n==null ? "—" : "€"+Math.round(n).toLocaleString("es-ES");
+const eur2 = n => n==null ? "—" : "€"+n.toLocaleString("es-ES",{minimumFractionDigits:2,maximumFractionDigits:2});
 const pctChg = (cur,prev) => prev ? (cur/prev-1)*100 : 0;
 const arrow = d => d>0.05?"↑":d<-0.05?"↓":"→";
 const cls = (d,goodUp=true) => Math.abs(d)<0.05?"flat":((d>0)===goodUp?"up":"down");
+
+/* parse número tolerante (es-ES / en) → null si vacío o "—" */
+function numES(v){
+  if(v==null) return null;
+  let s=String(v).trim();
+  if(s===""||s==="—"||s==="-"||s.toLowerCase()==="n/a") return null;
+  s=s.replace(/[€$%\s]/g,"").replace(/x$/i,"");
+  if(s.indexOf(",")>-1 && s.indexOf(".")>-1) s=s.replace(/\./g,"").replace(",",".");
+  else if(s.indexOf(",")>-1) s=s.replace(",",".");
+  const n=parseFloat(s);
+  return isNaN(n)?null:n;
+}
+/* formato porcentaje: acepta "11,8%"/"11.8%" string o decimal 0.118 → "11,8%" */
+function pctES(v){
+  if(v==null) return "—";
+  let s=String(v).trim();
+  if(s===""||s==="—"||s==="-") return "—";
+  if(s.includes("%")){ const n=numES(s); return n==null?s:n.toLocaleString("es-ES",{maximumFractionDigits:1})+"%"; }
+  const n=numES(s); if(n==null) return "—";
+  const p = Math.abs(n)<=1 ? n*100 : n;
+  return p.toLocaleString("es-ES",{maximumFractionDigits:1})+"%";
+}
+const emptyState = msg => `<div class="emptyst">${msg||"Sin datos aún — se cargan martes y viernes"}</div>`;
 
 /* ── CSV parser (gviz) ── */
 function parseCSV(txt){
@@ -319,6 +422,7 @@ async function fetchSheet(name){
 function setStatus(mode){
   const d=document.getElementById("dot"), t=document.getElementById("statusTxt");
   if(mode==="live"){d.className="dot live"; t.textContent="Datos en vivo · Google Sheet"}
+  else if(mode==="parcial"){d.className="dot live"; t.textContent="Datos en vivo · actualización parcial"}
   else {d.className="dot local"; t.textContent="Datos locales · snapshot"}
 }
 function renderPeriodo(wow){
@@ -408,20 +512,50 @@ function renderWoW(wow){
     `<table class="wt"><thead><tr><th>Métrica</th><th>${a.Semana}</th><th>${b.Semana}</th><th>Δ</th></tr></thead><tbody>${html}</tbody></table>`;
 }
 function renderExec(){
-  document.getElementById("execBody").innerHTML=`En la línea base (25-31 may, antes de la optimización) las <b>ventas totales subieron +34,5% WoW</b> (€9.901 → €13.316), con el <b>CVR de 1,87% a 2,33%</b> y <span class="hl">BuyBox sano al 97,9%</span>. El advertising es eficiente: <b>ROAS 8,5x · ACoS 11,8% · TACoS 3,2%</b> — el ads pesa poco, la cuenta vende mayormente orgánico. <b>Serene lidera con el 57% de las ventas.</b> Desde el 2-jun la gestión se reorientó al segmento alto (Serene/Nature/Palace/Xstar) y se cortó gasto en 90x190 deficitario. <span class="hl">El primer WoW que mide esta gestión llega la próxima semana</span> — y vigilamos el efecto del cambio de precios del 2-jun sobre el BuyBox.`;
+  document.getElementById("execBody").innerHTML=`En la línea base (25-31 may, antes de la optimización) las <b>ventas totales subieron +34,5% WoW</b> (€9.901 → €13.316), con el <b>CVR de 1,87% a 2,33%</b> y <span class="hl">BuyBox sano al 97,9%</span>. El advertising es eficiente: <b>ROAS 8,5x · ACoS 11,8% · TACoS 3,2%</b> — el ads pesa poco, la cuenta vende mayormente orgánico. <b>Serene lidera con el 57% de las ventas.</b> Desde el 2-jun la gestión se reorientó al segmento alto (Serene/Nature/Palace/Xstar) y se cortó gasto en 90x190 deficitario. <span class="hl">El primer WoW que mide esta gestión llega la próxima semana</span> — y vigilamos el efecto del cambio de precios del 5-jun sobre el BuyBox.`;
+}
+const campOn = e => /enabled|activ|^on$/i.test(String(e||""));
+/* agrupa Campanas_ASINs (campaña×ASIN) → una fila por campaña; activas por ROAS desc, pausadas al final */
+function mapCampanas(rows){
+  const groups={}, order=[];
+  rows.forEach(r=>{
+    const name=(r["Campaña"]||r.Campana||"").trim();
+    if(!name) return;
+    if(!groups[name]){ groups[name]=r; order.push(name); }
+  });
+  const arr=order.map(name=>{
+    const r=groups[name];
+    return {
+      nombre:name,
+      tipo:(r.Tipo||"").trim(),
+      estado:(r.Estado||"").trim(),
+      budget:numES(r["Budget/día (€)"]||r["Budget/dia (€)"]||r.Budget),
+      roas:numES(r.ROAS),
+      acos:(r.ACoS!=null && String(r.ACoS).trim()!=="") ? String(r.ACoS).trim() : (r.Acos||null),
+      ventas:numES(r["Ventas 30d (€)"]||r["Ventas 30d"]||r.Ventas)
+    };
+  });
+  arr.sort((a,b)=>{
+    const ao=campOn(a.estado), bo=campOn(b.estado);
+    if(ao!==bo) return ao?-1:1;
+    return (b.roas||0)-(a.roas||0);
+  });
+  return arr;
 }
 function renderCamp(c){
   const roasCls=r=>r==null?"":r>=10?"roas-hi":r>=6?"roas-mid":"";
-  document.querySelector("#camp tbody").innerHTML = c.map(x=>`
+  document.querySelector("#camp tbody").innerHTML = c.map(x=>{
+    const on=campOn(x.estado);
+    return `
     <tr>
       <td class="cn">${x.nombre}</td>
       <td>${x.tipo}</td>
-      <td><span class="pill ${x.estado=='enabled'?'p-on':'p-off'}">${x.estado=='enabled'?'activa':'pausada'}</span></td>
-      <td class="num">${x.budget?'€'+x.budget:'—'}</td>
-      <td class="num roas ${roasCls(x.roas)}">${x.roas?x.roas.toFixed(1)+'x':'—'}</td>
-      <td class="num hide-m">${x.acos}</td>
+      <td><span class="pill ${on?'p-on':'p-off'}">${on?'activa':'pausada'}</span></td>
+      <td class="num">${x.budget!=null?'€'+x.budget:'—'}</td>
+      <td class="num roas ${roasCls(x.roas)}">${x.roas!=null?x.roas.toFixed(1)+'x':'—'}</td>
+      <td class="num hide-m">${pctES(x.acos)}</td>
       <td class="num hide-m">${eur(x.ventas)}</td>
-    </tr>`).join("");
+    </tr>`;}).join("");
 }
 function renderKanban(acc){
   const groups={Hecho:[],Pendiente:[],"Esperando-Roger":[]};
@@ -444,19 +578,80 @@ function renderSerene(s){
     </div>`).join("");
 }
 
+/* ── Diario / Bitácora ── */
+const TPILL={"verificación":"tp-verif","verificacion":"tp-verif","optimización":"tp-opt","optimizacion":"tp-opt","hito":"tp-hito"};
+function renderDiario(rows){
+  const el=document.getElementById("diario");
+  if(!rows||!rows.length){ el.innerHTML=emptyState(); return; }
+  const sorted=rows.slice().sort((a,b)=>String(b.Fecha||"").localeCompare(String(a.Fecha||"")));
+  el.innerHTML=sorted.map(r=>{
+    const tipo=(r.Tipo||"").trim();
+    const cls=TPILL[tipo.toLowerCase()]||"tp-otro";
+    return `<div class="fitem"><div class="fdate">${r.Fecha||""}</div>
+      <div class="fmsg"><span class="tpill ${cls}">${tipo||"nota"}</span><br>${r.Mensaje||""}</div></div>`;
+  }).join("");
+}
+/* ── Precios ── */
+function renderPrecios(rows){
+  const tb=document.querySelector("#precios tbody");
+  if(!rows||!rows.length){ tb.innerHTML=`<tr><td colspan="5">${emptyState()}</td></tr>`; return; }
+  tb.innerHTML=rows.map(r=>{
+    const modelo=[r.Modelo,r.Medida].filter(x=>x&&String(x).trim()).join(" · ");
+    const antes=numES(r.Precio_Antes), ahora=numES(r.Precio_Ahora), varN=numES(r.Var_Pct);
+    let vcls="var-flat", vtxt="—";
+    if(varN!=null){ const p=Math.abs(varN)<=1?varN*100:varN; vcls=p<0?"var-down":p>0?"var-up":"var-flat"; vtxt=(p>0?"+":"")+p.toLocaleString("es-ES",{maximumFractionDigits:1})+"%"; }
+    return `<tr>
+      <td class="cn">${modelo||r.ASIN||"—"}</td>
+      <td class="num"><span class="pri-old">${antes!=null?eur2(antes):"—"}</span></td>
+      <td class="num"><span class="pri-new">${ahora!=null?eur2(ahora):"—"}</span></td>
+      <td class="num"><span class="varpill ${vcls}">${vtxt}</span></td>
+      <td class="hide-m">${r.Nota||""}</td></tr>`;
+  }).join("");
+}
+/* ── Funnel pirámide ── */
+function renderFunnel(rows){
+  const pyr=document.getElementById("funnelPyr"), tgt=document.getElementById("funnelTgt");
+  if(!rows||!rows.length){ pyr.innerHTML=emptyState(); tgt.innerHTML=""; return; }
+  const stcls=e=>{const k=(e||"").trim().toLowerCase(); return ["activo","sembrado","planificado","bloqueado"].includes(k)?k:"planificado";};
+  const toPct=v=>{const n=numES(v); return n==null?0:(Math.abs(n)<=1?n*100:n);};
+  pyr.innerHTML=rows.map(r=>{
+    const p=toPct(r.Pct), w=Math.max(p,8), c=stcls(r.Estado);
+    const lock=c==="bloqueado"?" 🔒":"";
+    const sub=c==="bloqueado"?"en espera de catálogo":`${eur(numES(r.Spend))} · ${p.toLocaleString("es-ES",{maximumFractionDigits:0})}%`;
+    return `<div class="band ${c}" data-w="${w.toFixed(1)}">${r.Nombre_Cliente||r.Etapa||""}${lock}<small>${sub}</small></div>`;
+  }).join("");
+  tgt.innerHTML=rows.map(r=>{
+    const p=toPct(r.Pct), o=toPct(r.Objetivo_Pct);
+    const fillw=o?Math.min(p/o*100,100):0;
+    return `<div><div class="fnt-l"><span>${r.Nombre_Cliente||r.Etapa||""}</span><span>${p.toFixed(0)}% → ${o.toFixed(0)}%</span></div>
+      <div class="fnt-track"><div class="fnt-fill" data-w="${fillw.toFixed(0)}"></div></div></div>`;
+  }).join("");
+  requestAnimationFrame(()=>{
+    document.querySelectorAll("#funnelPyr .band").forEach(b=>b.style.width=b.dataset.w+"%");
+    document.querySelectorAll("#funnelTgt .fnt-fill").forEach(b=>b.style.width=b.dataset.w+"%");
+  });
+}
+
 /* ── Boot ── */
 async function boot(){
-  let d = DATA, mode="local";
+  let d = {...DATA};
+  d.bitacora=[]; d.funnel=[]; d.precios=[]; d.modelos=[]; d.campanasView=DATA.campanas;
+  let mode="snapshot";
   if(SHEET_ID){
-    try{
-      const [wow,camp,acc] = await Promise.all([
-        fetchSheet("WoW_KPIs"), fetchSheet("Campanas_ASINs"), fetchSheet("Acciones_PPC")
-      ]);
-      // mapeo mínimo desde el Sheet live (mantiene embebidos para familias/serene si faltan)
-      if(wow.length) d = {...DATA, wow:wow};
-      if(acc.length) d.acciones = acc.map(r=>({fecha:r.Fecha,campana:r["Campaña"]||r.Campana,accion:r["Acción"]||r.Accion,detalle:r.Detalle,estado:r.Estado,analisis:r["Análisis"]||r.Analisis}));
-      mode="live";
-    }catch(e){ console.warn("Live falló, uso snapshot:",e); }
+    const names=["WoW_KPIs","Campanas_ASINs","Acciones_PPC","Bitacora","Funnel_Etapas","Precios_Impacto","Modelos_WoW"];
+    const res=await Promise.allSettled(names.map(n=>fetchSheet(n)));
+    const val=i=>res[i].status==="fulfilled"?res[i].value:null;
+    const wow=val(0),camp=val(1),acc=val(2),bita=val(3),fun=val(4),pre=val(5),mod=val(6);
+    let ok=0; const total=names.length;
+    if(wow&&wow.length){ d.wow=wow; ok++; }
+    if(camp&&camp.length){ d.campanasView=mapCampanas(camp); ok++; }
+    if(acc&&acc.length){ d.acciones=acc.map(r=>({fecha:r.Fecha,campana:r["Campaña"]||r.Campana,accion:r["Acción"]||r.Accion,detalle:r.Detalle,afecta:r.Afecta||r["Afecta a"],estado:r.Estado,analisis:r["Análisis"]||r.Analisis})); ok++; }
+    if(bita&&bita.length){ d.bitacora=bita; ok++; }
+    if(fun&&fun.length){ d.funnel=fun; ok++; }
+    if(pre&&pre.length){ d.precios=pre; ok++; }
+    if(mod&&mod.length){ d.modelos=mod; ok++; }
+    mode = ok===0 ? "snapshot" : ok===total ? "live" : "parcial";
+    if(res.some(r=>r.status==="rejected")) console.warn("Pestañas no cargadas:", res.map((r,i)=>r.status==="rejected"?names[i]:null).filter(Boolean).join(", "));
   }
   setStatus(mode);
   renderPeriodo(d.wow);
@@ -465,8 +660,11 @@ async function boot(){
   renderBizKPIs(d.wow);
   renderWoW(d.wow);
   renderFam(d.familias);
-  renderCamp(d.campanas);
+  renderCamp(d.campanasView);
   renderKanban(d.acciones);
+  renderDiario(d.bitacora);
+  renderPrecios(d.precios);
+  renderFunnel(d.funnel);
 }
 boot();
 
