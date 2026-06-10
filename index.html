@@ -617,16 +617,17 @@ function singleTableHTML(r){
 const MES={ene:"Enero",feb:"Febrero",mar:"Marzo",abr:"Abril",may:"Mayo",jun:"Junio",jul:"Julio",ago:"Agosto",sep:"Septiembre",oct:"Octubre",nov:"Noviembre",dic:"Diciembre"};
 const MESORD=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 function aggMonths(wow){
+  const pn=v=>{const n=numES(v); return n==null?0:(Math.abs(n)<=1?n*100:n);};   // → unidades de %
   const g={}, ord=[];
   wow.forEach(r=>{
     const m=String(r.Semana||"").toLowerCase().match(/(ene|feb|mar|abr|may|jun|jul|ago|sep|set|oct|nov|dic)/);
     if(!m) return;
     const k=m[1]==="set"?"sep":m[1];
-    if(!g[k]){ g[k]={Spend:0,Ad_Sales:0,Ventas_Totales:0,Orders:0,Impressions:0,Clicks:0,_cvr:0,_ctr:0,_n:0}; ord.push(k); }
-    const o=g[k];
+    if(!g[k]){ g[k]={Spend:0,Ad_Sales:0,Ventas_Totales:0,Orders:0,Impressions:0,Clicks:0,_cvrCl:0,_cl:0}; ord.push(k); }
+    const o=g[k], cl=toN0(r.Clicks);
     o.Spend+=toN0(r.Spend); o.Ad_Sales+=toN0(r.Ad_Sales); o.Ventas_Totales+=toN0(r.Ventas_Totales);
-    o.Orders+=toN0(r.Orders); o.Impressions+=toN0(r.Impressions); o.Clicks+=toN0(r.Clicks);
-    o._cvr+=toN0(r.CVR); o._ctr+=toN0(r.CTR); o._n++;
+    o.Orders+=toN0(r.Orders); o.Impressions+=toN0(r.Impressions); o.Clicks+=cl;
+    o._cvrCl+=pn(r.CVR)*cl; o._cl+=cl;   // CVR ponderado por clicks
   });
   ord.sort((a,b)=>MESORD.indexOf(a)-MESORD.indexOf(b));
   return ord.map(k=>{
@@ -634,8 +635,8 @@ function aggMonths(wow){
     return {Semana:MES[k]||k, Spend:o.Spend, Ad_Sales:o.Ad_Sales, Ventas_Totales:o.Ventas_Totales, Orders:o.Orders,
       Impressions:o.Impressions, Clicks:o.Clicks,
       ROAS:o.Spend?o.Ad_Sales/o.Spend:0, ACoS:(o.Ad_Sales?o.Spend/o.Ad_Sales*100:0).toFixed(1)+"%", TACoS:"—",
-      CVR:(o._n?o._cvr/o._n:0).toFixed(2)+"%", BuyBox:"—",
-      CTR:(o._n?o._ctr/o._n:0).toFixed(2)+"%"};
+      CVR:(o._cl?o._cvrCl/o._cl:0).toFixed(2)+"%", BuyBox:"—",
+      CTR:(o.Impressions?o.Clicks/o.Impressions*100:0).toFixed(2)+"%"};   // CTR = clics/impresiones reales
   });
 }
 /* gráfico de línea SVG (sin librerías) */
@@ -658,7 +659,7 @@ function lineChart(wow){
 }
 let COMPWOW=[];
 function renderComparativa(wow){
-  COMPWOW=wow||[];
+  COMPWOW=cleanRows(wow);
   const out=document.getElementById("wowtable");
   const seg=document.getElementById("compSeg");
   if(!seg||!out) return;
