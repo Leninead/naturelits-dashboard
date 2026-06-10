@@ -489,6 +489,15 @@ function pctES(v){
   return p.toLocaleString("es-ES",{maximumFractionDigits:1})+"%";
 }
 const emptyState = msg => `<div class="emptyst">${msg||"Sin datos aún — se cargan martes y viernes"}</div>`;
+/* filtro anti-leyenda: descarta filas cuya 1ª celda arranca con ⓘ o está vacía */
+function cleanRows(arr){
+  if(!Array.isArray(arr)) return [];
+  return arr.filter(r=>{
+    const v=r?Object.values(r)[0]:null;
+    const first=(v==null?"":String(v)).trim();
+    return first!=="" && first.charAt(0)!=="ⓘ";
+  });
+}
 
 /* ── CSV parser (gviz) ── */
 function parseCSV(txt){
@@ -724,6 +733,7 @@ function renderExec(){
 const campOn = e => /enabled|activ|^on$/i.test(String(e||""));
 /* agrupa Campanas_ASINs (campaña×ASIN) → una fila por campaña; activas por ROAS desc, pausadas al final */
 function mapCampanas(rows){
+  rows=cleanRows(rows);
   const groups={}, order=[];
   rows.forEach(r=>{
     const name=(r["Campaña"]||r.Campana||"").trim();
@@ -789,7 +799,8 @@ function renderSerene(s){
 const TPILL={"verificación":"tp-verif","verificacion":"tp-verif","optimización":"tp-opt","optimizacion":"tp-opt","hito":"tp-hito"};
 function renderDiario(rows){
   const el=document.getElementById("diario");
-  if(!rows||!rows.length){ el.innerHTML=emptyState(); return; }
+  rows=cleanRows(rows);
+  if(!rows.length){ el.innerHTML=emptyState(); return; }
   const sorted=rows.slice().sort((a,b)=>String(b.Fecha||"").localeCompare(String(a.Fecha||"")));
   el.innerHTML=sorted.map(r=>{
     const tipo=(r.Tipo||"").trim();
@@ -801,8 +812,14 @@ function renderDiario(rows){
 /* ── Precios ── */
 function renderPrecios(rows){
   const tb=document.querySelector("#precios tbody");
-  if(!rows||!rows.length){ tb.innerHTML=`<tr><td colspan="5">${emptyState()}</td></tr>`; return; }
-  tb.innerHTML=rows.map(r=>{
+  rows=cleanRows(rows);
+  if(!rows.length){ tb.innerHTML=`<tr><td colspan="5">${emptyState()}</td></tr>`; return; }
+  const real=rows.filter(r=>numES(r.Precio_Ahora)!=null||numES(r.Precio_Antes)!=null);
+  if(!real.length){
+    const nota=(rows[0].Nota||rows[0].Modelo||"").trim();
+    tb.innerHTML=`<tr><td colspan="5"><div class="emptyst">Próximamente${nota?" — "+nota:""}</div></td></tr>`; return;
+  }
+  tb.innerHTML=real.map(r=>{
     const modelo=[r.Modelo,r.Medida].filter(x=>x&&String(x).trim()).join(" · ");
     const antes=numES(r.Precio_Antes), ahora=numES(r.Precio_Ahora), varN=numES(r.Var_Pct);
     let vcls="var-flat", vtxt="—";
@@ -818,7 +835,8 @@ function renderPrecios(rows){
 /* ── Funnel pirámide ── */
 function renderFunnel(rows){
   const pyr=document.getElementById("funnelPyr"), tgt=document.getElementById("funnelTgt");
-  if(!rows||!rows.length){ pyr.innerHTML=emptyState(); tgt.innerHTML=""; return; }
+  rows=cleanRows(rows);
+  if(!rows.length){ pyr.innerHTML=emptyState(); tgt.innerHTML=""; return; }
   const stcls=e=>{const k=(e||"").trim().toLowerCase(); return ["activo","sembrado","planificado","bloqueado"].includes(k)?k:"planificado";};
   const toPct=v=>{const n=numES(v); return n==null?0:(Math.abs(n)<=1?n*100:n);};
   pyr.innerHTML=rows.map(r=>{
@@ -883,7 +901,7 @@ async function boot(){
     let ok=0; const total=names.length;
     if(wow&&wow.length){ d.wow=wow; ok++; }
     if(camp&&camp.length){ d.campanasView=mapCampanas(camp); ok++; }
-    if(acc&&acc.length){ d.acciones=acc.map(r=>({fecha:r.Fecha,campana:r["Campaña"]||r.Campana,accion:r["Acción"]||r.Accion,detalle:r.Detalle,afecta:r.Afecta||r["Afecta a"],estado:r.Estado,analisis:r["Análisis"]||r.Analisis})); ok++; }
+    if(acc&&acc.length){ d.acciones=cleanRows(acc).map(r=>({fecha:r.Fecha,campana:r["Campaña"]||r.Campana,accion:r["Acción"]||r.Accion,detalle:r.Detalle,afecta:r.Producto_Afectado||r.Afecta||r["Afecta a"],estado:r.Estado,analisis:r["Análisis"]||r.Analisis})); ok++; }
     if(bita&&bita.length){ d.bitacora=bita; ok++; }
     if(fun&&fun.length){ d.funnel=fun; ok++; }
     if(pre&&pre.length){ d.precios=pre; ok++; }
