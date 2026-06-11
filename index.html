@@ -321,10 +321,10 @@ footer b{color:var(--tinta)}
       <div class="snote">Todas las métricas · semana anterior vs semana actual</div>
     </div>
     <div class="seg" id="compSeg">
-      <button class="segbtn active" data-mode="wow">Semana (WoW)</button>
+      <button class="segbtn active" data-mode="evo">Evolutivo</button>
+      <button class="segbtn" data-mode="wow">Semana (WoW)</button>
       <button class="segbtn" data-mode="mom">Mes (MoM)</button>
       <button class="segbtn" data-mode="todo">Todo</button>
-      <button class="segbtn" data-mode="yoy">Año (YoY)</button>
     </div>
     <div id="wowtable"></div>
   </section>
@@ -689,9 +689,6 @@ function renderComparativa(wow){
   const out=document.getElementById("wowtable");
   const seg=document.getElementById("compSeg");
   if(!seg||!out) return;
-  const yoyBtn=seg.querySelector('[data-mode="yoy"]');
-  const hasYoY=COMPYOY.length>=2;   // candado encendido desde YoY_Negocio
-  if(yoyBtn){ yoyBtn.disabled=!hasYoY; yoyBtn.title=hasYoY?"":"Disponible al cargar histórico 2025"; }
   const draw=mode=>{
     seg.querySelectorAll(".segbtn").forEach(b=>b.classList.toggle("active",b.dataset.mode===mode));
     if(mode==="wow"){
@@ -706,29 +703,52 @@ function renderComparativa(wow){
     } else if(mode==="todo"){
       if(COMPWOW.length){ out.innerHTML=lineChart(COMPWOW)+`<div style="margin-top:20px">${compTableHTML(COMPWOW[0],COMPWOW[COMPWOW.length-1])}</div>`; }
       else out.innerHTML=emptyState();
-    } else { // yoy de negocio (2025 vs 2026)
-      if(COMPYOY.length>=2){ const s=COMPYOY.slice().sort((x,y)=>periodYearIdx(x.Periodo)-periodYearIdx(y.Periodo)); out.innerHTML=yoyTableHTML(s[s.length-2],s[s.length-1]); }
-      else out.innerHTML=emptyState("Disponible al cargar histórico 2025");
+    } else { // evolutivo: 3 columnas (año ant / sem ant / sem actual) + Δ YoY + Δ WoW
+      out.innerHTML = (COMPWOW.length||COMPYOY.length) ? evoTableHTML() : emptyState();
     }
   };
   seg.querySelectorAll(".segbtn").forEach(b=>b.addEventListener("click",()=>{ if(b.disabled)return; draw(b.dataset.mode); }));
-  draw("wow");
+  draw("evo");
 }
-/* tabla YoY de negocio: métricas de negocio con Δ%, publicidad como "—" + nota */
-function yoyTableHTML(a,b){
-  const chg=(av,bv)=>{ const na=toN0(av); if(!na) return {txt:"—",cls:"d-flat"}; const d=(toN0(bv)-na)/Math.abs(na)*100; return {txt:(d>0?"+":"")+d.toFixed(1).replace(".",",")+"%", cls:d>0?"d-up":d<0?"d-down":"d-flat"}; };
-  const bizRows=[
-    {l:"Ventas totales", k:"Ventas_Totales", f:"eur"},
-    {l:"Sesiones",       k:"Sessions",       f:"num"},
-    {l:"Unidades",       k:"Units",          f:"num"},
-    {l:"BuyBox",         k:"BuyBox",         f:"pct"},
-    {l:"CVR negocio",    k:"CVR_negocio",    f:"pct"}
+/* Evolutivo: 6 columnas combinando YoY_Negocio (2025/2026) + WoW_KPIs (25-31 / 1-7) */
+const evoMissing=v=>v==null||String(v).trim()===""||String(v).trim()==="—";
+const evoCell=(v,f)=>evoMissing(v)?"—":fmtVal(v,f);
+function evoDelta(va,vb,pp,good){
+  if(evoMissing(va)||evoMissing(vb)) return `<td class="d-flat">—</td>`;
+  const scale=x=>{ const n=toN0(x); return (pp && Math.abs(n)<=1)?n*100:n; };
+  const na=scale(va), nb=scale(vb);
+  let d, dtxt;
+  if(pp){ d=nb-na; dtxt=(d>0?"+":"")+d.toFixed(1).replace(".",",")+"pp"; }
+  else { if(!na) return `<td class="d-flat">—</td>`; d=(nb-na)/Math.abs(na)*100; dtxt=(d>0?"+":"")+d.toFixed(1).replace(".",",")+"%"; }
+  const dir=d>0?1:d<0?-1:0;
+  const cls=(good===0||dir===0)?"d-flat":(dir===good?"d-up":"d-down");
+  return `<td class="${cls}">${dtxt}</td>`;
+}
+function evoTableHTML(){
+  const wPrev=COMPWOW.length>=2?COMPWOW[COMPWOW.length-2]:null;
+  const wCur =COMPWOW.length>=1?COMPWOW[COMPWOW.length-1]:null;
+  const y25=COMPYOY.find(r=>/2025/.test(String(r.Periodo)))||null;
+  const y26=COMPYOY.find(r=>/2026/.test(String(r.Periodo)))||null;
+  const g=(o,k)=>o?o[k]:null;
+  // good: 1 sube=bueno · -1 baja=bueno · 0 neutral (igual que WROWS)
+  const M=[
+    {l:"Ventas totales", f:"eur", pp:0, good:1,  c1:g(y25,"Ventas_Totales"), c2:g(wPrev,"Ventas_Totales"), c3:g(wCur,"Ventas_Totales")},
+    {l:"Sesiones",       f:"num", pp:0, good:1,  c1:g(y25,"Sessions"),       c2:null,                       c3:g(y26,"Sessions")},
+    {l:"Unidades",       f:"num", pp:0, good:1,  c1:g(y25,"Units"),          c2:null,                       c3:g(y26,"Units")},
+    {l:"BuyBox",         f:"pct", pp:1, good:1,  c1:g(y25,"BuyBox"),         c2:g(wPrev,"BuyBox"),          c3:g(wCur,"BuyBox")},
+    {l:"CVR negocio",    f:"pct", pp:1, good:1,  c1:g(y25,"CVR_negocio"),    c2:null,                       c3:g(y26,"CVR_negocio")},
+    {l:"Inversión",      f:"eur", pp:0, good:0,  c1:null,                    c2:g(wPrev,"Spend"),           c3:g(wCur,"Spend")},
+    {l:"ACoS",           f:"pct", pp:1, good:-1, c1:null,                    c2:g(wPrev,"ACoS"),            c3:g(wCur,"ACoS")},
+    {l:"ROAS",           f:"x",   pp:0, good:1,  c1:null,                    c2:g(wPrev,"ROAS"),            c3:g(wCur,"ROAS")},
+    {l:"TACoS",          f:"pct", pp:1, good:-1, c1:null,                    c2:g(wPrev,"TACoS"),           c3:g(wCur,"TACoS")},
+    {l:"Impresiones",    f:"num", pp:0, good:0,  c1:null,                    c2:g(wPrev,"Impressions"),     c3:g(wCur,"Impressions")},
+    {l:"Clicks",         f:"num", pp:0, good:0,  c1:null,                    c2:g(wPrev,"Clicks"),          c3:g(wCur,"Clicks")},
+    {l:"CTR",            f:"pct", pp:1, good:0,  c1:null,                    c2:g(wPrev,"CTR"),             c3:g(wCur,"CTR")}
   ];
-  const adRows=["Inversión (ads)","ACoS","ROAS","TACoS","Impresiones","Clicks","CTR"];
-  const bizHTML=bizRows.map(r=>{ const c=chg(a[r.k],b[r.k]); return `<tr><td>${r.l}</td><td>${fmtVal(a[r.k],r.f)}</td><td>${fmtVal(b[r.k],r.f)}</td><td class="${c.cls}">${c.txt}</td></tr>`; }).join("");
-  const adHTML=adRows.map(l=>`<tr><td>${l}</td><td>—</td><td>—</td><td class="d-flat">—</td></tr>`).join("");
-  const nota=(b.Nota||a.Nota||"Publicidad: histórico 2025 no disponible");
-  return `<table class="wt"><thead><tr><th>Métrica</th><th>${a.Periodo||"2025"}</th><th>${b.Periodo||"2026"}</th><th>Δ</th></tr></thead><tbody>${bizHTML}${adHTML}</tbody></table>
+  const h1=g(y25,"Periodo")||"Año ant.", h2=(wPrev&&wPrev.Semana)||"Sem ant.", h3=(wCur&&wCur.Semana)||"Sem actual";
+  const rows=M.map(m=>`<tr><td>${m.l}</td><td>${evoCell(m.c1,m.f)}</td><td>${evoCell(m.c2,m.f)}</td><td>${evoCell(m.c3,m.f)}</td>${evoDelta(m.c1,m.c3,m.pp,m.good)}${evoDelta(m.c2,m.c3,m.pp,m.good)}</tr>`).join("");
+  const nota=(g(y26,"Nota")||g(y25,"Nota")||"Publicidad: histórico 2025 no disponible");
+  return `<div style="overflow-x:auto"><table class="wt"><thead><tr><th>Métrica</th><th>${h1}</th><th>${h2}</th><th>${h3}</th><th>Δ YoY</th><th>Δ WoW</th></tr></thead><tbody>${rows}</tbody></table></div>
     <div class="pricefoot">${nota}</div>`;
 }
 /* ── Veredicto (hero del Resumen) ── */
