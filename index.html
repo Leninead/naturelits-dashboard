@@ -308,8 +308,8 @@ footer b{color:var(--tinta)}
       <div class="snote">Variación WoW (pre-optimización)</div>
     </div>
     <div class="kpis" id="kpis"></div>
-    <div class="modwrap" id="modelos" style="margin-top:32px"></div>
-    <div id="serSec" style="margin-top:32px">
+    <div class="modwrap" id="modelos" style="margin-top:32px; display:none"></div>
+    <div id="serSec" style="margin-top:32px; display:none">
       <h3 class="subhead">Oportunidad Serene · top activos</h3>
       <div class="ser" id="ser"></div>
     </div>
@@ -982,8 +982,8 @@ async function boot(){
   renderVeredicto(d.veredicto);
   renderRecos(d.wow);
   renderKPIs(d.wow);
-  renderModelos(d.modelos);
-  renderSerene(d.serene);
+  // renderModelos(d.modelos); // oculto hasta tener data por modelo (Roger); contenedor #modelos display:none — reactivar quitando ambos
+  // renderSerene(d.serene);   // oculto junto con "Por modelo"; contenedor #serSec display:none — reactivar quitando ambos
   renderBizKPIs(d.wow);
   renderComparativa(d.wow);
   // renderFam(d.familias); // tabla por familia: placeholder viejo (€13.316 no coincide con cards reales); reactivar con dato real por familia
