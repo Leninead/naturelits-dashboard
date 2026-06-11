@@ -226,6 +226,13 @@ footer b{color:var(--tinta)}
 .gcard{background:var(--papel); border:1px solid var(--linea); border-radius:12px; padding:16px 18px}
 .gcard .gt{font-weight:700; color:var(--negro); font-size:.95rem; margin-bottom:5px}
 .gcard .gd{font-size:.84rem; color:var(--tinta); line-height:1.5}
+.gstds{display:flex; flex-wrap:wrap; gap:6px; margin-top:11px}
+.gstd{display:inline-flex; align-items:center; gap:5px; font-size:.68rem; font-weight:600; padding:2px 8px; border-radius:99px; font-family:'IBM Plex Mono',monospace}
+.gstd .gdot{width:7px; height:7px; border-radius:50%; flex:0 0 auto}
+.gstd .gl{font-weight:400; opacity:.7}
+.gstd-good{background:var(--verde-bg); color:#1d3324} .gstd-good .gdot{background:var(--verde)}
+.gstd-mid{background:var(--ambar-bg); color:#3a3208} .gstd-mid .gdot{background:var(--ambar)}
+.gstd-bad{background:var(--rojo-bg); color:#5a1f1a} .gstd-bad .gdot{background:var(--rojo)}
 
 /* ── Comparativa · segmented + chart ── */
 .seg{display:inline-flex; gap:2px; background:var(--papel); border:1px solid var(--linea); border-radius:10px; padding:3px; margin-bottom:22px; flex-wrap:wrap}
@@ -772,12 +779,12 @@ function renderWoW(wow){ renderComparativa(wow); }
 
 /* ── Glosario (cliente) ── */
 const GLOS=[
-  ["ROAS","Por cada € invertido en publicidad, cuántos € de venta vuelven."],
-  ["ACoS","Qué % de la venta se va en publicidad."],
-  ["TACoS","Publicidad sobre el total de ventas de la cuenta — mide la dependencia del ads."],
-  ["CVR","De cada 100 visitas, cuántas compran."],
-  ["BuyBox","% del tiempo que tu oferta es la que se compra con 1 click."],
-  ["CTR","De cada 100 que ven el anuncio, cuántos entran."],
+  ["ROAS","Por cada € invertido en publicidad, cuántos € de venta vuelven.",["≥6x","4–6x","<4x"]],
+  ["ACoS","Qué % de la venta se va en publicidad.",["≤15%","15–25%",">25%"]],
+  ["TACoS","Publicidad sobre el total de ventas de la cuenta — mide la dependencia del ads.",["≤5%","5–10%",">10%"]],
+  ["CVR","De cada 100 visitas, cuántas compran.",["≥3%","1,5–3%","<1,5%"]],
+  ["BuyBox","% del tiempo que tu oferta es la que se compra con 1 click.",["≥95%","85–95%","<85%"]],
+  ["CTR","De cada 100 que ven el anuncio, cuántos entran.",["≥0,5%","0,3–0,5%","<0,3%"]],
   ["Impresiones","Veces que el anuncio se mostró."],
   ["Negativizar","Bloquear búsquedas que gastan sin vender."],
   ["Harvest","Convertir una búsqueda ganadora en campaña propia."],
@@ -788,7 +795,7 @@ const GLOS=[
 function renderGlosario(){
   const el=document.getElementById("glosario");
   if(!el) return;
-  el.innerHTML=GLOS.map(([t,d])=>`<div class="gcard"><div class="gt">${t}</div><div class="gd">${d}</div></div>`).join("");
+  el.innerHTML=GLOS.map(([t,d,std])=>`<div class="gcard"><div class="gt">${t}</div><div class="gd">${d}</div>${std?`<div class="gstds"><span class="gstd gstd-good"><i class="gdot"></i>${std[0]} <span class="gl">bueno</span></span><span class="gstd gstd-mid"><i class="gdot"></i>${std[1]} <span class="gl">neutral</span></span><span class="gstd gstd-bad"><i class="gdot"></i>${std[2]} <span class="gl">malo</span></span></div>`:""}</div>`).join("");
 }
 
 /* ── Recomendaciones (banner Resumen) ── */
