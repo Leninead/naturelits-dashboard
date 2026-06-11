@@ -840,25 +840,24 @@ function mapCampanas(rows){
       budget:numES(r["Budget/día (€)"]||r["Budget/dia (€)"]||r.Budget),
       roas:numES(r.ROAS),
       acos:(r.ACoS!=null && String(r.ACoS).trim()!=="") ? String(r.ACoS).trim() : (r.Acos||null),
-      ventas:numES(r["Ventas 30d (€)"]||r["Ventas 30d"]||r.Ventas)
+      ventas:numES(r["Ventas 30d (€)"]||r["Ventas 30d"]||r.Ventas),
+      nuevo:/^nuev/i.test(String(r.Nuevo||r.nuevo||"").trim())?"nueva":"existente"   // columna Nuevo: nueva/existente; default existente
     };
   });
-  arr.sort((a,b)=>{
-    const ao=campOn(a.estado), bo=campOn(b.estado);
-    if(ao!==bo) return ao?-1:1;
-    return (b.roas||0)-(a.roas||0);
-  });
-  return arr;
+  // solo activas: incluye enabled/active (incl. OOB, que sigue enabled); excluye paused/archived/ended
+  const active=arr.filter(x=>campOn(x.estado));
+  active.sort((a,b)=>(b.roas||0)-(a.roas||0));
+  return active;
 }
 function renderCamp(c){
   const roasCls=r=>r==null?"":r>=10?"roas-hi":r>=6?"roas-mid":"";
   document.querySelector("#camp tbody").innerHTML = c.map(x=>{
-    const on=campOn(x.estado);
+    const nueva=x.nuevo==="nueva";
     return `
     <tr>
       <td class="cn">${x.nombre}</td>
       <td>${x.tipo}</td>
-      <td><span class="pill ${on?'p-on':'p-off'}">${on?'activa':'pausada'}</span></td>
+      <td><span class="pill ${nueva?'p-on':'p-off'}">${nueva?'nueva':'existente'}</span></td>
       <td class="num">${x.budget!=null?'€'+x.budget:'—'}</td>
       <td class="num roas ${roasCls(x.roas)}">${x.roas!=null?x.roas.toFixed(1)+'x':'—'}</td>
       <td class="num hide-m">${pctES(x.acos)}</td>
