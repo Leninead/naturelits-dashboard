@@ -56,7 +56,6 @@ h1 span{color:var(--naranja)}
 .panel{display:none}
 .panel.active{display:block; animation:fadeIn .35s ease}
 @keyframes fadeIn{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
-@media(max-width:640px){.tabs{overflow-x:auto; flex-wrap:nowrap} .tab{padding:10px 13px; font-size:.85rem}}
 
 /* ── Tabla WoW ── */
 .wt{width:100%; border-collapse:collapse; font-size:.92rem}
@@ -192,11 +191,11 @@ footer b{color:var(--tinta)}
 .tab[disabled]{color:#bcc0ba; cursor:not-allowed; border:1px dashed var(--linea); border-radius:7px 7px 0 0; opacity:.75}
 .tab[disabled]:hover{color:#bcc0ba}
 @media(max-width:640px){
-  .navwrap{gap:14px; flex-direction:column; align-items:stretch}
-  .navgrp{width:100%}
+  .navwrap{gap:14px; flex-direction:column; align-items:stretch; max-width:100%}
+  .navgrp{width:100%; min-width:0; max-width:100%}
   .navgrp-tabs{overflow-x:auto; flex-wrap:nowrap; -webkit-overflow-scrolling:touch; padding-bottom:4px; scrollbar-width:none}
   .navgrp-tabs::-webkit-scrollbar{display:none}
-  .tab{flex:0 0 auto}
+  .tab{flex:0 0 auto; padding:10px 13px; font-size:.85rem}
 }
 
 /* ── Resultados · acordeón por modelo ── */
