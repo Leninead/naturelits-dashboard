@@ -280,7 +280,7 @@ footer b{color:var(--tinta)}
         <button class="tab active" data-target="resumen">Resumen</button>
         <button class="tab" data-target="resultados">Resultados</button>
         <button class="tab" data-target="comparativa">Comparativa</button>
-        <button class="tab" data-target="funnel">Funnel</button>
+        <button class="tab" data-target="funnel" style="display:none">Funnel</button>
         <button class="tab" data-target="campanas">Campañas</button>
         <button class="tab" data-target="acciones">Acciones</button>
       </div>
@@ -297,18 +297,15 @@ footer b{color:var(--tinta)}
     </div>
   </nav>
 
-  <section class="exec panel active" data-tab="resumen">
+  <section class="panel active" data-tab="resumen" style="padding-top:8px">
     <div id="veredicto" class="veredicto"></div>
-    <div class="ek">Resumen ejecutivo · línea base</div>
-    <h2>La cuenta crece sola — ahora la dirigimos al segmento alto</h2>
-    <p id="execBody">—</p>
-    <div id="recoBanner" class="reco"></div>
+    <div id="recoBanner" class="reco" style="margin-top:0"></div>
   </section>
 
   <section id="s-kpi" class="panel" data-tab="resultados">
     <div class="shead">
       <span class="snum">01</span><h2>Resultados de la semana</h2>
-      <div class="snote">Línea base · variación WoW (pre-optimización)</div>
+      <div class="snote">Variación WoW (pre-optimización)</div>
     </div>
     <div class="kpis" id="kpis"></div>
     <div class="modwrap" id="modelos" style="margin-top:32px"></div>
@@ -335,7 +332,7 @@ footer b{color:var(--tinta)}
   <section id="s-fam" class="panel" data-tab="negocio">
     <div class="shead">
       <span class="snum">02</span><h2>Negocio · WoW por familia</h2>
-      <div class="snote">Ventas totales, CVR y BuyBox · 25-31 vs 18-24 may</div>
+      <div class="snote">Ventas totales, CVR y BuyBox · 1-7 jun vs 25-31 may</div>
     </div>
     <div class="kpis" id="bizkpis" style="margin-bottom:24px"></div>
     <div class="fam" id="fam"></div>
@@ -544,7 +541,7 @@ function setStatus(mode){
 }
 function renderPeriodo(wow){
   const last = wow[wow.length-1];
-  document.getElementById("periodo").textContent = "Línea base · semana "+last.Semana+" 2026 · pre-optimización";
+  document.getElementById("periodo").textContent = "Semana "+last.Semana+" 2026 · pre-optimización";
   const now = new Date().toLocaleDateString("es-ES",{day:"numeric",month:"long",year:"numeric"});
   document.getElementById("ftDate").innerHTML = "Generado el <b>"+now+"</b>";
 }
@@ -555,8 +552,8 @@ function renderKPIs(wow){
     {lbl:"Ventas Ads",  val:eur(toN(c.Ad_Sales)),  d:pctChg(toN(c.Ad_Sales),toN(p.Ad_Sales)),  up:true},
     {lbl:"Inversión",   val:eur(toN(c.Spend)),  d:pctChg(toN(c.Spend),toN(p.Spend)),  up:true},
     {lbl:"ROAS",        val:toN(c.ROAS).toFixed(1)+"x", d:pctChg(toN(c.ROAS),toN(p.ROAS)), up:true},
-    {lbl:"ACoS",        val:c.ACoS,             d:pctChg(toN(c.ACoS),toN(p.ACoS)),    up:false},
-    {lbl:"TACoS",       val:c.TACoS,            d:pctChg(toN(c.TACoS),toN(p.TACoS)),  up:false},
+    {lbl:"ACoS",        val:pctES(c.ACoS),      d:pctChg(toN(c.ACoS),toN(p.ACoS)),    up:false},
+    {lbl:"TACoS",       val:pctES(c.TACoS),     d:pctChg(toN(c.TACoS),toN(p.TACoS)),  up:false},
     {lbl:"Órdenes",     val:toN(c.Orders),      d:pctChg(toN(c.Orders),toN(p.Orders)),up:true}
   ];
   document.getElementById("kpis").innerHTML = items.map((k,i)=>`
@@ -583,8 +580,8 @@ function renderBizKPIs(wow){
   const toN=v=>parseFloat(String(v).replace(/[€%\s]/g,"").replace(",","."))||0;
   const items=[
     {lbl:"Ventas totales", val:eur(toN(c.Ventas_Totales)), d:pctChg(toN(c.Ventas_Totales),toN(p.Ventas_Totales)), up:true},
-    {lbl:"CVR",            val:c.CVR,                  d:pctChg(toN(c.CVR),toN(p.CVR)),             up:true},
-    {lbl:"BuyBox",         val:c.BuyBox,               d:pctChg(toN(c.BuyBox),toN(p.BuyBox)),       up:true}
+    {lbl:"CVR",            val:pctES(c.CVR),           d:pctChg(toN(c.CVR),toN(p.CVR)),             up:true},
+    {lbl:"BuyBox",         val:pctES(c.BuyBox),        d:pctChg(toN(c.BuyBox),toN(p.BuyBox)),       up:true}
   ];
   document.getElementById("bizkpis").innerHTML=items.map((k,i)=>`
     <div class="kpi" style="animation-delay:${i*70}ms"><div class="lbl">${k.lbl}</div>
@@ -792,7 +789,8 @@ function renderRecos(wow){
   el.innerHTML=`<h4>${title}</h4><ul>${bullets.map(b=>`<li>${b}</li>`).join("")}</ul>`;
 }
 function renderExec(){
-  document.getElementById("execBody").innerHTML=`En la línea base (25-31 may, antes de la optimización) las <b>ventas totales subieron +34,5% WoW</b> (€9.901 → €13.316), con el <b>CVR de 1,87% a 2,33%</b> y <span class="hl">BuyBox sano al 97,9%</span>. El advertising es eficiente: <b>ROAS 8,5x · ACoS 11,8% · TACoS 3,2%</b> — el ads pesa poco, la cuenta vende mayormente orgánico. <b>Serene lidera con el 57% de las ventas.</b> Desde el 2-jun la gestión se reorientó al segmento alto (Serene/Nature/Palace/Xstar) y se cortó gasto en 90x190 deficitario. <span class="hl">El primer WoW que mide esta gestión llega la próxima semana</span> — y vigilamos el efecto del cambio de precios del 5-jun sobre el BuyBox.`;
+  const _ex=document.getElementById("execBody"); if(!_ex) return;   // execBody removido del Resumen (veredicto + banner lo reemplazan)
+  _ex.innerHTML=`En la línea base (25-31 may, antes de la optimización) las <b>ventas totales subieron +34,5% WoW</b> (€9.901 → €13.316), con el <b>CVR de 1,87% a 2,33%</b> y <span class="hl">BuyBox sano al 97,9%</span>. El advertising es eficiente: <b>ROAS 8,5x · ACoS 11,8% · TACoS 3,2%</b> — el ads pesa poco, la cuenta vende mayormente orgánico. <b>Serene lidera con el 57% de las ventas.</b> Desde el 2-jun la gestión se reorientó al segmento alto (Serene/Nature/Palace/Xstar) y se cortó gasto en 90x190 deficitario. <span class="hl">El primer WoW que mide esta gestión llega la próxima semana</span> — y vigilamos el efecto del cambio de precios del 5-jun sobre el BuyBox.`;
 }
 const campOn = e => /enabled|activ|^on$/i.test(String(e||""));
 /* agrupa Campanas_ASINs (campaña×ASIN) → una fila por campaña; activas por ROAS desc, pausadas al final */
@@ -981,7 +979,6 @@ async function boot(){
   COMPMOM=d.mom; COMPYOY=d.yoy;
   setStatus(mode);
   renderPeriodo(d.wow);
-  renderExec();
   renderVeredicto(d.veredicto);
   renderRecos(d.wow);
   renderKPIs(d.wow);
@@ -989,7 +986,8 @@ async function boot(){
   renderSerene(d.serene);
   renderBizKPIs(d.wow);
   renderComparativa(d.wow);
-  renderFam(d.familias);
+  // renderFam(d.familias); // tabla por familia: placeholder viejo (€13.316 no coincide con cards reales); reactivar con dato real por familia
+  document.getElementById("fam").innerHTML = emptyState("Próximamente · se carga con el Business Report by child");
   renderCamp(d.campanasView);
   renderKanban(d.acciones);
   renderDiario(d.bitacora);
