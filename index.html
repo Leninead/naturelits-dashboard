@@ -324,8 +324,8 @@ footer b{color:var(--tinta)}
 
   <section class="panel" data-tab="comparativa">
     <div class="shead">
-      <span class="snum">WoW</span><h2>Comparativa semana vs semana</h2>
-      <div class="snote">Todas las métricas · semana anterior vs semana actual</div>
+      <h2>Comparativa</h2>
+      <div class="snote" id="compSub">Período sobre período · evolutivo, semana, mes y año</div>
     </div>
     <div class="seg" id="compSeg">
       <button class="segbtn active" data-mode="evo">Evolutivo</button>
@@ -698,6 +698,8 @@ function renderComparativa(wow){
   if(!seg||!out) return;
   const draw=mode=>{
     seg.querySelectorAll(".segbtn").forEach(b=>b.classList.toggle("active",b.dataset.mode===mode));
+    const subEl=document.getElementById("compSub");
+    if(subEl) subEl.textContent = {evo:"Año anterior · semana anterior · semana actual — con Δ YoY y Δ WoW", wow:"Semana anterior vs semana actual", mom:"Mes anterior vs mes actual", todo:"Todas las semanas cargadas"}[mode] || "Período sobre período";
     if(mode==="wow"){
       if(COMPWOW.length<1){ out.innerHTML=emptyState(); return; }
       const a=COMPWOW[COMPWOW.length-2]||COMPWOW[COMPWOW.length-1], b=COMPWOW[COMPWOW.length-1];
