@@ -191,7 +191,13 @@ footer b{color:var(--tinta)}
 .navgrp-tabs{display:flex; gap:2px; flex-wrap:wrap}
 .tab[disabled]{color:#bcc0ba; cursor:not-allowed; border:1px dashed var(--linea); border-radius:7px 7px 0 0; opacity:.75}
 .tab[disabled]:hover{color:#bcc0ba}
-@media(max-width:640px){.navwrap{gap:16px} .navgrp-tabs{overflow-x:auto; flex-wrap:nowrap}}
+@media(max-width:640px){
+  .navwrap{gap:14px; flex-direction:column; align-items:stretch}
+  .navgrp{width:100%}
+  .navgrp-tabs{overflow-x:auto; flex-wrap:nowrap; -webkit-overflow-scrolling:touch; padding-bottom:4px; scrollbar-width:none}
+  .navgrp-tabs::-webkit-scrollbar{display:none}
+  .tab{flex:0 0 auto}
+}
 
 /* ── Resultados · acordeón por modelo ── */
 .subhead{font-family:'Fraunces',serif; font-weight:600; font-size:1.15rem; color:var(--negro); margin:0 0 16px}
