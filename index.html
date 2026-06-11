@@ -604,7 +604,10 @@ function fmtVal(val,f){
 }
 function compTableHTML(a,b){
   const html=WROWS.map(r=>{
-    const av=a[r.k], bv=b[r.k], na=toN0(av), nb=toN0(bv);
+    const av=a[r.k], bv=b[r.k];
+    // para filas de % el delta es en puntos porcentuales: escalar igual que pctES (decimal<=1 -> *100)
+    const scale = x => { const n=toN0(x); return (r.pp && Math.abs(n)<=1) ? n*100 : n; };
+    const na=scale(av), nb=scale(bv);
     let d, dtxt;
     if(r.pp){ d=nb-na; dtxt=(d>0?"+":"")+d.toFixed(1).replace(".",",")+"pp"; }
     else { d=na?((nb-na)/Math.abs(na)*100):0; dtxt=(d>0?"+":"")+d.toFixed(1).replace(".",",")+"%"; }
