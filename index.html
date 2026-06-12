@@ -359,7 +359,7 @@ footer b{color:var(--tinta)}
   <section id="s-camp" class="panel" data-tab="campanas">
     <div class="shead">
       <span class="snum">03</span><h2>Campañas · dónde metemos la aguja</h2>
-      <div class="snote">Eficiencia por campaña (ROAS / ACoS lifetime)</div>
+      <div class="snote">Eficiencia por campaña · últimos 30 días (13may-12jun)</div>
     </div>
     <div style="overflow-x:auto">
       <table class="tbl" id="camp">
@@ -367,6 +367,7 @@ footer b{color:var(--tinta)}
           <th>Campaña</th><th>Tipo</th><th>Estado</th>
           <th class="num">Budget/d</th><th class="num">ROAS</th>
           <th class="num hide-m">ACoS</th><th class="num hide-m">Ventas</th>
+          <th class="num hide-m">Inversión</th>
         </tr></thead>
         <tbody></tbody>
       </table>
@@ -819,9 +820,10 @@ function renderFamVentanas(rows){
     const dd=eurDelta(d);
     const trcls=[isTot?"famv-total":"", isSer?"famv-serene":""].filter(Boolean).join(" ");
     const cells=VENT_COLS.map(c=>`<td>${eur(numES(r[c.k]))}</td>`).join("");
+    const inv=`<td>${eur(numES(r.Inv2529))}</td><td>${eur(numES(r.Inv0812))}</td>`;   // inversión PPC por familia; eur() → "—" si vacío
     const lectura=(r.Lectura||"").trim();
     return `<tr${trcls?` class="${trcls}"`:""}>
-      <td>${fam||"—"}</td>${cells}
+      <td>${fam||"—"}</td>${cells}${inv}
       <td class="${dd.cls}">${dd.txt}</td>
       <td class="famv-lectura">${lectura||"—"}</td></tr>`;
   }).join("");
@@ -831,7 +833,7 @@ function renderFamVentanas(rows){
     <div class="famv-sub">Ventas del negocio · ventanas lun-vie (mismo rango de días) · foco de mejora por familia</div>
     <div class="famv-banner">${banner}</div>
     <div style="overflow-x:auto"><table class="wt">
-      <thead><tr><th>Familia</th>${VENT_COLS.map(c=>`<th>${c.h}</th>`).join("")}<th>Δ (8-12 vs 25-29)</th><th>Lectura</th></tr></thead>
+      <thead><tr><th>Familia</th>${VENT_COLS.map(c=>`<th>${c.h}</th>`).join("")}<th>Inv 25-29</th><th>Inv 8-12</th><th>Δ (8-12 vs 25-29)</th><th>Lectura</th></tr></thead>
       <tbody>${body}</tbody></table></div>`;
 }
 
@@ -896,7 +898,8 @@ function mapCampanas(rows){
       budget:numES(r["Budget/día (€)"]||r["Budget/dia (€)"]||r.Budget),
       roas:numES(r.ROAS),
       acos:(r.ACoS!=null && String(r.ACoS).trim()!=="") ? String(r.ACoS).trim() : (r.Acos||null),
-      ventas:numES(r["Ventas 30d (€)"]||r["Ventas 30d"]||r.Ventas),
+      ventas:numES(r["Ventas 30d (€) · 13may-12jun"]||r["Ventas 30d (€)"]||r["Ventas 30d"]||r.Ventas),
+      inversion:numES(r["Inversión 30d (€)"]||r["Inversion 30d (€)"]||r["Inversión 30d"]||r["Inversion 30d"]),
       nuevo:/^nuev/i.test(String(r.Nuevo||r.nuevo||"").trim())?"nueva":"existente"   // columna Nuevo: nueva/existente; default existente
     };
   });
@@ -918,6 +921,7 @@ function renderCamp(c){
       <td class="num roas ${roasCls(x.roas)}">${x.roas!=null?x.roas.toFixed(1)+'x':'—'}</td>
       <td class="num hide-m">${pctES(x.acos)}</td>
       <td class="num hide-m">${eur(x.ventas)}</td>
+      <td class="num hide-m">${eur(x.inversion)}</td>
     </tr>`;}).join("");
 }
 function renderKanban(acc){
