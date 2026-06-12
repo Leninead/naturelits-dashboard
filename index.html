@@ -264,6 +264,16 @@ footer b{color:var(--tinta)}
 .veredicto .vlabel{font-size:.64rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--naranja); margin-bottom:3px}
 .veredicto .vtext{font-size:.86rem; color:var(--tinta); line-height:1.48}
 @media(max-width:640px){ .veredicto .vgrid{grid-template-columns:1fr} }
+
+/* ── Comparativa · por familia · 4 ventanas ── */
+.famv{margin-top:40px; padding-top:34px; border-top:1px solid var(--linea)}
+.famv-tit{font-family:'Fraunces',serif; font-weight:600; font-size:1.2rem; color:#1d5a48; margin-bottom:4px}
+.famv-sub{font-size:.82rem; color:var(--gris); margin:0 0 16px}
+.famv-banner{background:var(--verde-bg); border:1px solid var(--naranja-bd); border-left:4px solid #1d5a48; border-radius:12px; padding:14px 18px; margin-bottom:18px; font-size:.89rem; line-height:1.6; color:#1d3324}
+.famv-banner b{color:#1d5a48; font-weight:700}
+.wt tr.famv-total td{font-weight:700; color:var(--negro); border-top:2px solid var(--negro)}
+.wt tr.famv-serene td{background:var(--ambar-bg)}
+.wt td.famv-lectura{text-align:left; font-family:inherit; font-weight:400; color:var(--gris); font-size:.82rem; white-space:normal; max-width:300px}
 </style>
 </head>
 <body>
@@ -334,6 +344,7 @@ footer b{color:var(--tinta)}
       <button class="segbtn" data-mode="todo">Todo</button>
     </div>
     <div id="wowtable"></div>
+    <div id="famVentanas" class="famv"></div>
   </section>
 
   <section id="s-fam" class="panel" data-tab="negocio">
@@ -779,6 +790,51 @@ function renderVeredicto(rows){
 }
 function renderWoW(wow){ renderComparativa(wow); }
 
+/* ── Comparativa · por familia · 4 ventanas (Modelos_Ventanas) ── */
+const VENT_COLS=[
+  {k:"V1822", h:"18-22 may"},
+  {k:"V2529", h:"25-29 may"},
+  {k:"V0105", h:"1-5 jun"},
+  {k:"V0812", h:"8-12 jun"}
+];
+/* Δ en € con signo y color (verde positivo / rojo negativo); "—" si falta una celda */
+function eurDelta(n){
+  if(n==null) return {txt:"—", cls:"d-flat"};
+  const r=Math.round(n);
+  if(r===0) return {txt:"€0", cls:"d-flat"};
+  return {txt:(r>0?"+":"-")+"€"+Math.abs(r).toLocaleString("es-ES"), cls:r>0?"d-up":"d-down"};
+}
+function renderFamVentanas(rows){
+  const el=document.getElementById("famVentanas");
+  if(!el) return;
+  rows=cleanRows(rows);                       // descarta vacías y filas ⓘ
+  if(!rows.length){ el.style.display="none"; el.innerHTML=""; return; }
+  el.style.display="";
+  const body=rows.map(r=>{
+    const fam=(r.Familia||"").trim();
+    const isTot=/^total/i.test(fam);
+    const isSer=/serene/i.test(fam);
+    const cur=numES(r.V0812), prev=numES(r.V2529);
+    const d=(cur==null||prev==null)?null:cur-prev;   // Δ no rompe si una celda viene vacía
+    const dd=eurDelta(d);
+    const trcls=[isTot?"famv-total":"", isSer?"famv-serene":""].filter(Boolean).join(" ");
+    const cells=VENT_COLS.map(c=>`<td>${eur(numES(r[c.k]))}</td>`).join("");
+    const lectura=(r.Lectura||"").trim();
+    return `<tr${trcls?` class="${trcls}"`:""}>
+      <td>${fam||"—"}</td>${cells}
+      <td class="${dd.cls}">${dd.txt}</td>
+      <td class="famv-lectura">${lectura||"—"}</td></tr>`;
+  }).join("");
+  const banner=`El negocio se mantuvo estable pese al ajuste de precios: la <b>facturación total se sostuvo (6.342 → 6.636 €)</b>. La mayor oportunidad de crecimiento está identificada y es concreta: <b>Serene</b> —el corazón del catálogo, ~60% de las ventas— recibe más visitas que antes, pero la conversión bajó. El plan se concentra ahí: <b>recuperar el cierre de venta en Serene es la palanca de mayor impacto</b>.`;
+  el.innerHTML=`
+    <div class="famv-tit">Por familia · 4 ventanas</div>
+    <div class="famv-sub">Ventas del negocio · ventanas lun-vie (mismo rango de días) · foco de mejora por familia</div>
+    <div class="famv-banner">${banner}</div>
+    <div style="overflow-x:auto"><table class="wt">
+      <thead><tr><th>Familia</th>${VENT_COLS.map(c=>`<th>${c.h}</th>`).join("")}<th>Δ (8-12 vs 25-29)</th><th>Lectura</th></tr></thead>
+      <tbody>${body}</tbody></table></div>`;
+}
+
 /* ── Glosario (cliente) ── */
 const GLOS=[
   ["ROAS","Por cada € invertido en publicidad, cuántos € de venta vuelven.",["≥6x","4–6x","<4x"]],
@@ -983,13 +1039,13 @@ function renderModelos(rows){
 async function boot(){
   let d = {...DATA};
   d.bitacora=[]; d.funnel=[]; d.precios=[]; d.modelos=[]; d.campanasView=DATA.campanas;
-  d.veredicto=[]; d.mom=[]; d.yoy=[];
+  d.veredicto=[]; d.mom=[]; d.yoy=[]; d.ventanas=[];
   let mode="snapshot";
   if(SHEET_ID){
-    const names=["WoW_KPIs","Campanas_ASINs","Acciones_PPC","Bitacora","Funnel_Etapas","Precios_Impacto","Modelos_WoW","Veredicto","MoM_KPIs","YoY_Negocio"];
+    const names=["WoW_KPIs","Campanas_ASINs","Acciones_PPC","Bitacora","Funnel_Etapas","Precios_Impacto","Modelos_WoW","Veredicto","MoM_KPIs","YoY_Negocio","Modelos_Ventanas"];
     const res=await Promise.allSettled(names.map(n=>fetchSheet(n)));
     const val=i=>res[i].status==="fulfilled"?res[i].value:null;
-    const wow=val(0),camp=val(1),acc=val(2),bita=val(3),fun=val(4),pre=val(5),mod=val(6),ver=val(7),momS=val(8),yoyS=val(9);
+    const wow=val(0),camp=val(1),acc=val(2),bita=val(3),fun=val(4),pre=val(5),mod=val(6),ver=val(7),momS=val(8),yoyS=val(9),venS=val(10);
     let ok=0; const total=names.length;
     if(wow&&wow.length){ d.wow=wow; ok++; }
     if(camp&&camp.length){ d.campanasView=mapCampanas(camp); ok++; }
@@ -1001,6 +1057,7 @@ async function boot(){
     if(ver&&ver.length){ d.veredicto=cleanRows(ver); ok++; }
     if(momS&&momS.length){ d.mom=cleanRows(momS); ok++; }
     if(yoyS&&yoyS.length){ d.yoy=cleanRows(yoyS); ok++; }
+    if(venS&&venS.length){ d.ventanas=cleanRows(venS); ok++; }
     mode = ok===0 ? "snapshot" : ok===total ? "live" : "parcial";
     if(res.some(r=>r.status==="rejected")) console.warn("Pestañas no cargadas:", res.map((r,i)=>r.status==="rejected"?names[i]:null).filter(Boolean).join(", "));
   }
@@ -1014,6 +1071,7 @@ async function boot(){
   // renderSerene(d.serene);   // oculto junto con "Por modelo"; contenedor #serSec display:none — reactivar quitando ambos
   renderBizKPIs(d.wow);
   renderComparativa(d.wow);
+  renderFamVentanas(d.ventanas);
   // renderFam(d.familias); // tabla por familia: placeholder viejo (€13.316 no coincide con cards reales); reactivar con dato real por familia
   document.getElementById("fam").innerHTML = emptyState("Próximamente · se carga con el Business Report by child");
   renderCamp(d.campanasView);
