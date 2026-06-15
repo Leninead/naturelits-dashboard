@@ -929,6 +929,7 @@ function renderCamp(c){
     </tr>`;}).join("");
 }
 function renderKanban(acc){
+  acc=(acc||[]).filter(a=>(a.ambito||"").trim().toLowerCase()==="cliente");   // fail-safe: solo client-apto; interno/vacío/faltante NO se renderiza
   const groups={Hecho:[],Pendiente:[],"Esperando-Roger":[]};
   acc.forEach(a=>{(groups[a.estado]||(groups[a.estado]=[])).push(a)});
   const col=(key,title,cssc)=>{
@@ -1057,7 +1058,7 @@ async function boot(){
     let ok=0; const total=names.length;
     if(wow&&wow.length){ d.wow=wow; ok++; }
     if(camp&&camp.length){ d.campanasView=mapCampanas(camp); ok++; }
-    if(acc&&acc.length){ d.acciones=cleanRows(acc).map(r=>({fecha:r.Fecha,campana:r["Campaña"]||r.Campana,accion:r["Acción"]||r.Accion,detalle:r.Detalle,afecta:r.Producto_Afectado||r.Afecta||r["Afecta a"],estado:r.Estado,analisis:r["Análisis"]||r.Analisis})); ok++; }
+    if(acc&&acc.length){ d.acciones=cleanRows(acc).map(r=>({fecha:r.Fecha,campana:r["Campaña"]||r.Campana,accion:r["Acción"]||r.Accion,detalle:r.Detalle,afecta:r.Producto_Afectado||r.Afecta||r["Afecta a"],estado:r.Estado,analisis:r["Análisis"]||r.Analisis,ambito:r["Ambito"]})); ok++; }
     if(bita&&bita.length){ d.bitacora=bita; ok++; }
     if(fun&&fun.length){ d.funnel=fun; ok++; }
     if(pre&&pre.length){ d.precios=pre; ok++; }
