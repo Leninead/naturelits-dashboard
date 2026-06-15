@@ -470,18 +470,18 @@ const DATA = {
     {nombre:"Harvest Exact", tipo:"SP", estado:"paused", budget:null, roas:null, acos:"—", ventas:null}
   ],
   acciones: [
-    {fecha:"2026-06-01", campana:"SP (varias)", accion:"Negativizar", detalle:"Ola 1 · 25 negativos exact (€381 recuperable)", afecta:"Varias familias", estado:"Hecho", analisis:"25 términos con clicks por encima del threshold por CVR y 0 órdenes: €381 de spend sin retorno en 30d."},
-    {fecha:"2026-06-02", campana:"SP (varias)", accion:"Negativizar", detalle:"Ola 2 · 28 negativos exact", afecta:"Varias familias", estado:"Hecho"},
-    {fecha:"2026-06-02", campana:"Harvest", accion:"Harvest", detalle:"8 keywords a Exact/Phrase", afecta:"Familias foco", estado:"Hecho"},
-    {fecha:"2026-06-03", campana:"Estrategia", accion:"Pivote a foco", detalle:"Serene/Nature/Palace/Xstar · Moon/Orbit sin PPC", afecta:"Serene/Nature/Palace/Xstar", estado:"Hecho", analisis:"Serene/Nature/Palace/Xstar concentran el ROAS rentable; Moon/Orbit no sostienen el ACoS objetivo, no merecen budget de PPC."},
-    {fecha:"2026-06-03", campana:"DD 90x190", accion:"Pausar", detalle:"90x190 deficitario por margen · alineado con directiva", afecta:"Moon/Orbit 90x190", estado:"Hecho", analisis:"El margen unitario del 90x190 no cubre el coste publicitario: ni con ROAS aceptable el formato es rentable a nivel de P&L."},
-    {fecha:"2026-06-04", campana:"AUTO-MUELLES", accion:"Quitar negativo", detalle:"b0cnvykzl1 es Serene Hybrid propio, vivo (€6.078/30d)", afecta:"Serene 135x190 · B0CNVYKZL1", estado:"Pendiente", analisis:"El ASIN negativizado es producto propio activo (€6.078/30d): el negativo estaba bloqueando ventas reales, no tráfico ajeno."},
-    {fecha:"2026-06-04", campana:"BLACKFRIDAY", accion:"Reactivar", detalle:"€8/d cuando Serene esté 100% live", afecta:"Serene/Palace/Nature", estado:"Pendiente"},
-    {fecha:"2026-06-04", campana:"PAT", accion:"Crear", detalle:"Sobre familias foco (no existía)", afecta:"Familias foco", estado:"Pendiente"},
-    {fecha:"2026-06-04", campana:"Harvest", accion:"Reestructurar", detalle:"Product Ads sobre foco y reactivar", afecta:"Familias foco", estado:"Pendiente"},
-    {fecha:"2026-06-04", campana:"Hero", accion:"Escalar budget", detalle:"IS <5% con ROAS 10-15x = techo de crecimiento", afecta:"AUTOBulk/DD Serene/Muelles", estado:"Pendiente", analisis:"Impression Share <5% con ROAS 10-15x = demanda rentable sin captar; el cuello de botella es el budget, no la eficiencia."},
-    {fecha:"2026-06-03", campana:"Serene", accion:"Reactivar listings", detalle:"3 SKUs Serene cerrados (135/90/150x190)", afecta:"B0F9PZSYD4 · B0F9PGG5LH · B0F9PCRZVD", estado:"Esperando-Roger"},
-    {fecha:"2026-06-03", campana:"Precios", accion:"Update precios", detalle:"Expiración masiva 2-jun · siguen como están", afecta:"Catálogo completo", estado:"Esperando-Roger"}
+    {fecha:"2026-06-01", campana:"SP (varias)", accion:"Negativizar", detalle:"Ola 1 · 25 negativos exact (€381 recuperable)", afecta:"Varias familias", estado:"Hecho", analisis:"25 términos con clicks por encima del threshold por CVR y 0 órdenes: €381 de spend sin retorno en 30d.", ambito:"cliente"},
+    {fecha:"2026-06-02", campana:"SP (varias)", accion:"Negativizar", detalle:"Ola 2 · 28 negativos exact", afecta:"Varias familias", estado:"Hecho", ambito:"cliente"},
+    {fecha:"2026-06-02", campana:"Harvest", accion:"Harvest", detalle:"8 keywords a Exact/Phrase", afecta:"Familias foco", estado:"Hecho", ambito:"cliente"},
+    {fecha:"2026-06-03", campana:"Estrategia", accion:"Pivote a foco", detalle:"Serene/Nature/Palace/Xstar · Moon/Orbit sin PPC", afecta:"Serene/Nature/Palace/Xstar", estado:"Hecho", analisis:"Serene/Nature/Palace/Xstar concentran el ROAS rentable; Moon/Orbit no sostienen el ACoS objetivo, no merecen budget de PPC.", ambito:"cliente"},
+    {fecha:"2026-06-03", campana:"DD 90x190", accion:"Pausar", detalle:"90x190 deficitario por margen · alineado con directiva", afecta:"Moon/Orbit 90x190", estado:"Hecho", analisis:"El margen unitario del 90x190 no cubre el coste publicitario: ni con ROAS aceptable el formato es rentable a nivel de P&L.", ambito:"cliente"},
+    {fecha:"2026-06-04", campana:"AUTO-MUELLES", accion:"Quitar negativo", detalle:"b0cnvykzl1 es Serene Hybrid propio, vivo (€6.078/30d)", afecta:"Serene 135x190 · B0CNVYKZL1", estado:"Pendiente", analisis:"El ASIN negativizado es producto propio activo (€6.078/30d): el negativo estaba bloqueando ventas reales, no tráfico ajeno.", ambito:"cliente"},
+    {fecha:"2026-06-04", campana:"BLACKFRIDAY", accion:"Reactivar", detalle:"€8/d cuando Serene esté 100% live", afecta:"Serene/Palace/Nature", estado:"Pendiente", ambito:"cliente"},
+    {fecha:"2026-06-04", campana:"PAT", accion:"Crear", detalle:"Sobre familias foco (no existía)", afecta:"Familias foco", estado:"Pendiente", ambito:"cliente"},
+    {fecha:"2026-06-04", campana:"Harvest", accion:"Reestructurar", detalle:"Product Ads sobre foco y reactivar", afecta:"Familias foco", estado:"Pendiente", ambito:"cliente"},
+    {fecha:"2026-06-04", campana:"Hero", accion:"Escalar budget", detalle:"IS <5% con ROAS 10-15x = techo de crecimiento", afecta:"AUTOBulk/DD Serene/Muelles", estado:"Pendiente", analisis:"Impression Share <5% con ROAS 10-15x = demanda rentable sin captar; el cuello de botella es el budget, no la eficiencia.", ambito:"cliente"},
+    {fecha:"2026-06-03", campana:"Serene", accion:"Reactivar listings", detalle:"3 SKUs Serene cerrados (135/90/150x190)", afecta:"B0F9PZSYD4 · B0F9PGG5LH · B0F9PCRZVD", estado:"Esperando-Roger", ambito:"cliente"},
+    {fecha:"2026-06-03", campana:"Precios", accion:"Update precios", detalle:"Expiración masiva 2-jun · siguen como están", afecta:"Catálogo completo", estado:"Esperando-Roger", ambito:"cliente"}
   ],
   serene: [
     {tam:"150x190", asin:"B0CNW4TFG1", sales:6602, tag:"Activo · top #1"},
