@@ -379,6 +379,9 @@ footer b{color:var(--tinta)}
       <span class="snum">04</span><h2>Acciones</h2>
       <div class="snote">Qué se hizo · qué sigue · qué depende del cliente</div>
     </div>
+    <div style="margin-bottom:18px">
+      <select id="accWeek" style="font-family:inherit;font-size:.86rem;font-weight:600;color:var(--negro);background:var(--papel);border:1px solid var(--linea);border-radius:9px;padding:8px 12px;cursor:pointer"></select>
+    </div>
     <div class="kanban" id="kanban"></div>
   </section>
 
@@ -580,7 +583,7 @@ function renderKPIs(wow){
     <div class="kpi" style="animation-delay:${i*70}ms">
       <div class="lbl">${k.lbl}</div>
       <div class="val">${k.val}</div>
-      <div class="delta ${cls(k.d,k.up)}">${arrow(k.d)} ${Math.abs(k.d).toFixed(1)}${k.unit||"%"} <span style="color:var(--gris);font-weight:400">WoW</span></div>
+      <div class="delta ${cls(k.d,k.up)}">${arrow(k.d)} ${Math.abs(k.d).toFixed(1).replace(".",",")}${k.unit||"%"} <span style="color:var(--gris);font-weight:400">WoW</span></div>
     </div>`).join("");
 }
 function renderFam(fam){
@@ -606,7 +609,7 @@ function renderBizKPIs(wow){
   document.getElementById("bizkpis").innerHTML=items.map((k,i)=>`
     <div class="kpi" style="animation-delay:${i*70}ms"><div class="lbl">${k.lbl}</div>
       <div class="val">${k.val}</div>
-      <div class="delta ${cls(k.d,k.up)}">${arrow(k.d)} ${Math.abs(k.d).toFixed(1)}% <span style="color:var(--gris);font-weight:400">WoW</span></div></div>`).join("");
+      <div class="delta ${cls(k.d,k.up)}">${arrow(k.d)} ${Math.abs(k.d).toFixed(1).replace(".",",")}% <span style="color:var(--gris);font-weight:400">WoW</span></div></div>`).join("");
   const _sn=document.getElementById("bizSnote");
   if(_sn) _sn.textContent="Ventas totales, CVR y BuyBox · "+c.Semana+(wow.length>=2?(" vs "+wow[wow.length-2].Semana):"");
 }
@@ -929,17 +932,46 @@ function renderCamp(c){
       <td class="num hide-m">${eur(x.inversion)}</td>
     </tr>`;}).join("");
 }
+/* semana Lun-Dom de una fecha ISO (YYYY-MM-DD) → {key: lunes ISO, label: "1-7 jun"} */
+function weekOf(fechaStr){
+  const m=String(fechaStr||"").match(/(\d{4})-(\d{2})-(\d{2})/);
+  if(!m) return null;
+  const d=new Date(+m[1], +m[2]-1, +m[3]); if(isNaN(d.getTime())) return null;
+  const off=(d.getDay()+6)%7;                                   // 0=lunes
+  const mon=new Date(d); mon.setDate(d.getDate()-off);
+  const sun=new Date(mon); sun.setDate(mon.getDate()+6);
+  const pad=n=>String(n).padStart(2,"0");
+  const key=`${mon.getFullYear()}-${pad(mon.getMonth()+1)}-${pad(mon.getDate())}`;   // lunes ISO → ordenable lexicográficamente
+  const label = mon.getMonth()===sun.getMonth()
+    ? `${mon.getDate()}-${sun.getDate()} ${MESORD[mon.getMonth()]}`
+    : `${mon.getDate()} ${MESORD[mon.getMonth()]}-${sun.getDate()} ${MESORD[sun.getMonth()]}`;
+  return {key, label};
+}
 function renderKanban(acc){
-  acc=(acc||[]).filter(a=>(a.ambito||"").trim().toLowerCase()==="cliente");   // fail-safe: solo client-apto; interno/vacío/faltante NO se renderiza
-  const groups={Hecho:[],Pendiente:[],"Esperando-Roger":[]};
-  acc.forEach(a=>{(groups[a.estado]||(groups[a.estado]=[])).push(a)});
-  const col=(key,title,cssc)=>{
-    const items=(groups[key]||[]).slice().sort((a,b)=>(b.fecha||"").localeCompare(a.fecha||""));
-    return `<div class="col ${cssc}"><h3>${title}<span class="cnt">${items.length}</span></h3>
-      ${items.map(a=>`<div class="card"><div class="ca">${a.accion} · ${a.campana}</div><div class="cd">${a.detalle}</div>${a.analisis?`<div class="can"><b>🔍 Análisis</b>${a.analisis}</div>`:""}${a.afecta?`<div class="cf">${a.afecta}</div>`:""}<div class="cc">${a.fecha}</div></div>`).join("")}</div>`;
+  acc=(acc||[]).filter(a=>(a.ambito||"").trim().toLowerCase()==="cliente");   // P0-2: whitelist PRIMERO (interno/vacío/faltante NO entra)
+  acc.forEach(a=>{ const w=weekOf(a.fecha); a._wkKey=w?w.key:""; a._wkLbl=w?w.label:""; });   // semana Lun-Dom por card
+  const drawCols=wkKey=>{
+    const rows = wkKey ? acc.filter(a=>a._wkKey===wkKey) : acc;   // filtro semana DESPUÉS del whitelist
+    const groups={Hecho:[],Pendiente:[],"Esperando-Roger":[]};
+    rows.forEach(a=>{(groups[a.estado]||(groups[a.estado]=[])).push(a)});
+    const col=(key,title,cssc)=>{
+      const items=(groups[key]||[]).slice().sort((a,b)=>(b.fecha||"").localeCompare(a.fecha||""));   // newest→oldest
+      return `<div class="col ${cssc}"><h3>${title}<span class="cnt">${items.length}</span></h3>
+        ${items.map(a=>`<div class="card"><div class="ca">${a.accion} · ${a.campana}</div><div class="cd">${a.detalle}</div>${a.analisis?`<div class="can"><b>🔍 Análisis</b>${a.analisis}</div>`:""}${a.afecta?`<div class="cf">${a.afecta}</div>`:""}<div class="cc">${a.fecha}</div></div>`).join("")}</div>`;
+    };
+    document.getElementById("kanban").innerHTML =
+      col("Hecho","Hecho","done")+col("Pendiente","Por hacer","todo")+col("Esperando-Roger","Espera cliente","wait");
   };
-  document.getElementById("kanban").innerHTML =
-    col("Hecho","Hecho","done")+col("Pendiente","Por hacer","todo")+col("Esperando-Roger","Espera cliente","wait");
+  // dropdown: semanas presentes en las cards, newest→oldest (dinámico)
+  const weeks=[], seen={};
+  acc.forEach(a=>{ if(a._wkKey && !seen[a._wkKey]){ seen[a._wkKey]=1; weeks.push({key:a._wkKey,label:a._wkLbl}); } });
+  weeks.sort((x,y)=>y.key.localeCompare(x.key));
+  const sel=document.getElementById("accWeek");
+  if(sel){
+    sel.innerHTML=`<option value="">Todas las semanas</option>`+weeks.map(w=>`<option value="${w.key}">${w.label}</option>`).join("");
+    sel.onchange=()=>drawCols(sel.value);
+  }
+  drawCols(sel?sel.value:"");   // default: "Todas"
 }
 function renderSerene(s){
   document.getElementById("ser").innerHTML = s.map(x=>`
