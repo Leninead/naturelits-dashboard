@@ -567,19 +567,20 @@ function renderPeriodo(wow){
 function renderKPIs(wow){
   const c=wow[wow.length-1], p=wow[wow.length-2]||c;
   const toN=v=>parseFloat(String(v).replace(/[€%\s]/g,"").replace(",","."))||0;
+  const ppN=v=>{const n=toN0(v); return Math.abs(n)<=1?n*100:n;};   // % → puntos porcentuales (idéntico a Comparativa/Evolutivo)
   const items=[
     {lbl:"Ventas Ads",  val:eur(toN(c.Ad_Sales)),  d:pctChg(toN(c.Ad_Sales),toN(p.Ad_Sales)),  up:true},
     {lbl:"Inversión",   val:eur(toN(c.Spend)),  d:pctChg(toN(c.Spend),toN(p.Spend)),  up:true},
     {lbl:"ROAS",        val:toN(c.ROAS).toFixed(1)+"x", d:pctChg(toN(c.ROAS),toN(p.ROAS)), up:true},
-    {lbl:"ACoS",        val:pctES(c.ACoS),      d:pctChg(toN(c.ACoS),toN(p.ACoS)),    up:false},
-    {lbl:"TACoS",       val:pctES(c.TACoS),     d:pctChg(toN(c.TACoS),toN(p.TACoS)),  up:false},
+    {lbl:"ACoS",        val:pctES(c.ACoS),      d:ppN(c.ACoS)-ppN(p.ACoS),    up:false, unit:"pp"},
+    {lbl:"TACoS",       val:pctES(c.TACoS),     d:ppN(c.TACoS)-ppN(p.TACoS),  up:false, unit:"pp"},
     {lbl:"Órdenes",     val:toN(c.Orders),      d:pctChg(toN(c.Orders),toN(p.Orders)),up:true}
   ];
   document.getElementById("kpis").innerHTML = items.map((k,i)=>`
     <div class="kpi" style="animation-delay:${i*70}ms">
       <div class="lbl">${k.lbl}</div>
       <div class="val">${k.val}</div>
-      <div class="delta ${cls(k.d,k.up)}">${arrow(k.d)} ${Math.abs(k.d).toFixed(1)}% <span style="color:var(--gris);font-weight:400">WoW</span></div>
+      <div class="delta ${cls(k.d,k.up)}">${arrow(k.d)} ${Math.abs(k.d).toFixed(1)}${k.unit||"%"} <span style="color:var(--gris);font-weight:400">WoW</span></div>
     </div>`).join("");
 }
 function renderFam(fam){
