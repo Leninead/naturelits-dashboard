@@ -265,7 +265,7 @@ footer b{color:var(--tinta)}
 .veredicto .vtext{font-size:.86rem; color:var(--tinta); line-height:1.48}
 @media(max-width:640px){ .veredicto .vgrid{grid-template-columns:1fr} }
 
-/* ── Comparativa · por familia · 4 ventanas ── */
+/* ── Comparativa · por familia · 2 semanas Lun-Dom ── */
 .famv{margin-top:40px; padding-top:34px; border-top:1px solid var(--linea)}
 .famv-tit{font-family:'Fraunces',serif; font-weight:600; font-size:1.2rem; color:#1d5a48; margin-bottom:4px}
 .famv-sub{font-size:.82rem; color:var(--gris); margin:0 0 16px}
@@ -350,7 +350,7 @@ footer b{color:var(--tinta)}
   <section id="s-fam" class="panel" data-tab="negocio">
     <div class="shead">
       <span class="snum">02</span><h2>Negocio · WoW por familia</h2>
-      <div class="snote">Ventas totales, CVR y BuyBox · 1-7 jun vs 25-31 may</div>
+      <div class="snote" id="bizSnote">Ventas totales, CVR y BuyBox · 1-7 jun vs 25-31 may</div>
     </div>
     <div class="kpis" id="bizkpis" style="margin-bottom:24px"></div>
     <div class="fam" id="fam"></div>
@@ -606,6 +606,8 @@ function renderBizKPIs(wow){
     <div class="kpi" style="animation-delay:${i*70}ms"><div class="lbl">${k.lbl}</div>
       <div class="val">${k.val}</div>
       <div class="delta ${cls(k.d,k.up)}">${arrow(k.d)} ${Math.abs(k.d).toFixed(1)}% <span style="color:var(--gris);font-weight:400">WoW</span></div></div>`).join("");
+  const _sn=document.getElementById("bizSnote");
+  if(_sn) _sn.textContent="Ventas totales, CVR y BuyBox · "+c.Semana+(wow.length>=2?(" vs "+wow[wow.length-2].Semana):"");
 }
 const WROWS=[
   {l:"Inversión",      k:"Spend",          f:"eur", good:0},
@@ -791,12 +793,10 @@ function renderVeredicto(rows){
 }
 function renderWoW(wow){ renderComparativa(wow); }
 
-/* ── Comparativa · por familia · 4 ventanas (Modelos_Ventanas) ── */
+/* ── Comparativa · por familia · 2 semanas Lun-Dom (Modelos_Ventanas) ── */
 const VENT_COLS=[
-  {k:"V1822", h:"18-22 may"},
-  {k:"V2529", h:"25-29 may"},
-  {k:"V0105", h:"1-5 jun"},
-  {k:"V0812", h:"8-12 jun"}
+  {k:"Ventas_1-7jun",  h:"1-7 jun"},
+  {k:"Ventas_8-14jun", h:"8-14 jun"}
 ];
 /* Δ en € con signo y color (verde positivo / rojo negativo); "—" si falta una celda */
 function eurDelta(n){
@@ -815,26 +815,30 @@ function renderFamVentanas(rows){
     const fam=(r.Familia||"").trim();
     const isTot=/^total/i.test(fam);
     const isSer=/serene/i.test(fam);
-    const cur=numES(r.V0812), prev=numES(r.V2529);
+    const cur=numES(r["Ventas_8-14jun"]), prev=numES(r["Ventas_1-7jun"]);
     const d=(cur==null||prev==null)?null:cur-prev;   // Δ no rompe si una celda viene vacía
     const dd=eurDelta(d);
     const trcls=[isTot?"famv-total":"", isSer?"famv-serene":""].filter(Boolean).join(" ");
     const cells=VENT_COLS.map(c=>`<td>${eur(numES(r[c.k]))}</td>`).join("");
-    const inv=`<td>${eur(numES(r.Inv2529))}</td><td>${eur(numES(r.Inv0812))}</td>`;   // inversión PPC por familia; eur() → "—" si vacío
+    const inv=`<td>${eur(numES(r["Inv_SP_8-14jun"]))}</td>`;   // Inversión Sponsored Products (semana actual 8-14 jun) por familia; eur() → "—" si vacío
     const lectura=(r.Lectura||"").trim();
     return `<tr${trcls?` class="${trcls}"`:""}>
       <td>${fam||"—"}</td>${cells}${inv}
       <td class="${dd.cls}">${dd.txt}</td>
       <td class="famv-lectura">${lectura||"—"}</td></tr>`;
   }).join("");
-  const banner=`El negocio se mantuvo estable pese al ajuste de precios: la <b>facturación total se sostuvo (6.342 → 6.636 €)</b>. La mayor oportunidad de crecimiento está identificada y es concreta: <b>Serene</b> —el corazón del catálogo, ~60% de las ventas— recibe más visitas que antes, pero la conversión bajó. El plan se concentra ahí: <b>recuperar el cierre de venta en Serene es la palanca de mayor impacto</b>.`;
+  const _tot=rows.find(r=>/^total/i.test((r.Familia||"").trim()))||{};
+  const _tPrev=numES(_tot["Ventas_1-7jun"]), _tCur=numES(_tot["Ventas_8-14jun"]);
+  const _mil=n=>n==null?"—":Math.round(n).toLocaleString("es-ES");
+  const banner=`El negocio se mantuvo estable pese al ajuste de precios: la <b>facturación total se sostuvo (${_mil(_tPrev)} → ${_mil(_tCur)} €)</b>. La mayor oportunidad de crecimiento está identificada y es concreta: <b>Serene</b> —el corazón del catálogo, ~60% de las ventas— recibe más visitas que antes, pero la conversión bajó. El plan se concentra ahí: <b>recuperar el cierre de venta en Serene es la palanca de mayor impacto</b>.`;
   el.innerHTML=`
-    <div class="famv-tit">Por familia · 4 ventanas</div>
-    <div class="famv-sub">Ventas del negocio · ventanas lun-vie (mismo rango de días) · foco de mejora por familia</div>
+    <div class="famv-tit">Por familia · 2 semanas</div>
+    <div class="famv-sub">Ventas del negocio · Semana (Lun-Dom) · foco de mejora por familia</div>
     <div class="famv-banner">${banner}</div>
     <div style="overflow-x:auto"><table class="wt">
-      <thead><tr><th>Familia</th>${VENT_COLS.map(c=>`<th>${c.h}</th>`).join("")}<th>Inv 25-29</th><th>Inv 8-12</th><th>Δ (8-12 vs 25-29)</th><th>Lectura</th></tr></thead>
-      <tbody>${body}</tbody></table></div>`;
+      <thead><tr><th>Familia</th>${VENT_COLS.map(c=>`<th>${c.h}</th>`).join("")}<th>Inv. SP (€)</th><th>Δ (8-14 vs 1-7)</th><th>Lectura</th></tr></thead>
+      <tbody>${body}</tbody></table></div>
+    <div class="pricefoot">Inv. = Sponsored Products; no incluye SB/SD (no atribuibles por modelo).</div>`;
 }
 
 /* ── Glosario (cliente) ── */
