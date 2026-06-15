@@ -795,8 +795,8 @@ function renderWoW(wow){ renderComparativa(wow); }
 
 /* ── Comparativa · por familia · 2 semanas Lun-Dom (Modelos_Ventanas) ── */
 const VENT_COLS=[
-  {k:"Ventas_1-7jun",  h:"1-7 jun"},
-  {k:"Ventas_8-14jun", h:"8-14 jun"}
+  {k:"Ventas_1-7jun",  h:"Ventas 1-7 jun"},
+  {k:"Ventas_8-14jun", h:"Ventas 8-14 jun"}
 ];
 /* Δ en € con signo y color (verde positivo / rojo negativo); "—" si falta una celda */
 function eurDelta(n){
@@ -820,23 +820,23 @@ function renderFamVentanas(rows){
     const dd=eurDelta(d);
     const trcls=[isTot?"famv-total":"", isSer?"famv-serene":""].filter(Boolean).join(" ");
     const cells=VENT_COLS.map(c=>`<td>${eur(numES(r[c.k]))}</td>`).join("");
-    const inv=`<td>${eur(numES(r["Inv_SP_8-14jun"]))}</td>`;   // Inversión Sponsored Products (semana actual 8-14 jun) por familia; eur() → "—" si vacío
+    const inv=`<td>${eur(numES(r["Inv_SP_1-7jun"]))}</td><td>${eur(numES(r["Inv_SP_8-14jun"]))}</td>`;   // Inversión Sponsored Products por familia (1-7 y 8-14 jun); eur() → "—" si vacío
     const lectura=(r.Lectura||"").trim();
     return `<tr${trcls?` class="${trcls}"`:""}>
-      <td>${fam||"—"}</td>${cells}${inv}
-      <td class="${dd.cls}">${dd.txt}</td>
+      <td>${fam||"—"}</td>${cells}<td class="${dd.cls}">${dd.txt}</td>${inv}
       <td class="famv-lectura">${lectura||"—"}</td></tr>`;
   }).join("");
   const _tot=rows.find(r=>/^total/i.test((r.Familia||"").trim()))||{};
   const _tPrev=numES(_tot["Ventas_1-7jun"]), _tCur=numES(_tot["Ventas_8-14jun"]);
   const _mil=n=>n==null?"—":Math.round(n).toLocaleString("es-ES");
-  const banner=`El negocio se mantuvo estable pese al ajuste de precios: la <b>facturación total se sostuvo (${_mil(_tPrev)} → ${_mil(_tCur)} €)</b>. La mayor oportunidad de crecimiento está identificada y es concreta: <b>Serene</b> —el corazón del catálogo, ~60% de las ventas— recibe más visitas que antes, pero la conversión bajó. El plan se concentra ahí: <b>recuperar el cierre de venta en Serene es la palanca de mayor impacto</b>.`;
+  const _pct = _tPrev? Math.round((_tCur-_tPrev)/_tPrev*100) : 0;
+  const banner = `La facturación total ${_tCur>=_tPrev?'subió a':'bajó a'} <b>${_mil(_tCur)} €</b> (${_pct>=0?'+':''}${_pct}% vs. la semana anterior). El foco de trabajo sigue en <b>Serene</b> (~60% del catálogo): recibe más visitas e inversión, pero la conversión de la ficha bajó. Recuperar ese cierre es la palanca de mayor impacto.`;
   el.innerHTML=`
     <div class="famv-tit">Por familia · 2 semanas</div>
     <div class="famv-sub">Ventas del negocio · Semana (Lun-Dom) · foco de mejora por familia</div>
     <div class="famv-banner">${banner}</div>
     <div style="overflow-x:auto"><table class="wt">
-      <thead><tr><th>Familia</th>${VENT_COLS.map(c=>`<th>${c.h}</th>`).join("")}<th>Inv. SP (€)</th><th>Δ (8-14 vs 1-7)</th><th>Lectura</th></tr></thead>
+      <thead><tr><th>Familia</th>${VENT_COLS.map(c=>`<th>${c.h}</th>`).join("")}<th>Δ Ventas</th><th>Inv. SP 1-7 jun</th><th>Inv. SP 8-14 jun</th><th>Lectura</th></tr></thead>
       <tbody>${body}</tbody></table></div>
     <div class="pricefoot">Inv. = Sponsored Products; no incluye SB/SD (no atribuibles por modelo).</div>`;
 }
