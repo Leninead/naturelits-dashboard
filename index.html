@@ -957,7 +957,7 @@ function renderKanban(acc){
     const col=(key,title,cssc)=>{
       const items=(groups[key]||[]).slice().sort((a,b)=>(b.fecha||"").localeCompare(a.fecha||""));   // newest→oldest
       return `<div class="col ${cssc}"><h3>${title}<span class="cnt">${items.length}</span></h3>
-        ${items.map(a=>`<div class="card"><div class="ca">${a.accion} · ${a.campana}</div><div class="cd">${a.detalle}</div>${a.analisis?`<div class="can"><b>🔍 Análisis</b>${a.analisis}</div>`:""}${a.afecta?`<div class="cf">${a.afecta}</div>`:""}<div class="cc">${a.fecha}</div></div>`).join("")}</div>`;
+        ${items.length?items.map(a=>`<div class="card"><div class="ca">${a.accion} · ${a.campana}</div><div class="cd">${a.detalle}</div>${a.analisis?`<div class="can"><b>🔍 Análisis</b>${a.analisis}</div>`:""}${a.afecta?`<div class="cf">${a.afecta}</div>`:""}<div class="cc">${a.fecha}</div></div>`).join(""):`<div class="card-empty" style="color:var(--gris);font-size:.82rem;font-style:italic;padding:14px 4px;text-align:center">— nada pendiente —</div>`}</div>`;
     };
     document.getElementById("kanban").innerHTML =
       col("Hecho","Hecho","done")+col("Pendiente","Por hacer","todo")+col("Esperando-Roger","Espera cliente","wait");
