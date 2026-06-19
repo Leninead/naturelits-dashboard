@@ -322,7 +322,7 @@ footer b{color:var(--tinta)}
   <section id="s-kpi" class="panel" data-tab="resultados">
     <div class="shead">
       <span class="snum">01</span><h2>Resultados de la semana</h2>
-      <div class="snote">Variación WoW (pre-optimización)</div>
+      <div class="snote">Variación semana a semana</div>
     </div>
     <div class="kpis" id="kpis"></div>
     <div class="modwrap" id="modelos" style="margin-top:32px; display:none"></div>
@@ -359,7 +359,7 @@ footer b{color:var(--tinta)}
   <section id="s-camp" class="panel" data-tab="campanas">
     <div class="shead">
       <span class="snum">03</span><h2>Campañas · dónde metemos la aguja</h2>
-      <div class="snote">Eficiencia por campaña · últimos 30 días (13may-12jun)</div>
+      <div class="snote">Eficiencia por campaña · acumulado 30 días</div>
     </div>
     <div style="overflow-x:auto">
       <table class="tbl" id="camp">
@@ -563,7 +563,7 @@ function setStatus(mode){
 }
 function renderPeriodo(wow){
   const last = wow[wow.length-1];
-  document.getElementById("periodo").textContent = "Semana "+last.Semana+" 2026 · pre-optimización";
+  document.getElementById("periodo").textContent = "Semana "+last.Semana+" 2026";
   const now = new Date().toLocaleDateString("es-ES",{day:"numeric",month:"long",year:"numeric"});
   document.getElementById("ftDate").innerHTML = "Generado el <b>"+now+"</b>";
 }
