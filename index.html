@@ -107,7 +107,8 @@ h2{font-family:'Fraunces',serif; font-weight:600; font-size:1.5rem; color:var(--
 .p-on{color:var(--verde); background:var(--verde-bg)}
 .p-off{color:var(--gris); background:#eee}
 .roas{font-weight:600}
-.roas-hi{color:var(--verde)} .roas-mid{color:var(--ambar)}
+.roas-hi{color:var(--verde)} .roas-ok{color:var(--naranja-2)} .roas-mid{color:var(--ambar)} .roas-low{color:var(--rojo)}
+.roas-learn{color:var(--gris); font-style:italic; font-weight:600; font-size:.72rem}
 
 /* ── Acciones kanban ── */
 .kanban{display:grid; grid-template-columns:repeat(3,1fr); gap:16px}
@@ -917,16 +918,22 @@ function mapCampanas(rows){
   return active;
 }
 function renderCamp(c){
-  const roasCls=r=>r==null?"":r>=10?"roas-hi":r>=6?"roas-mid":"";
+  // 4 niveles ROAS (umbral Roger): >6 verde · 3-6 verde flojo · <3 naranja · <1 rojo
+  const roasCls=r=>r==null?"":r>6?"roas-hi":r>=3?"roas-ok":r>=1?"roas-mid":"roas-low";
   document.querySelector("#camp tbody").innerHTML = c.map(x=>{
     const nueva=x.nuevo==="nueva";
+    // "en learning": campaña nueva que todavia no registro venta (ROAS vacio/0)
+    const enLearning = nueva && (x.roas==null || x.roas===0);
+    const roasCell = enLearning
+      ? `<span class="roas-learn">en learning</span>`
+      : (x.roas!=null ? `<span class="roas ${roasCls(x.roas)}">${x.roas.toFixed(1)+'x'}</span>` : '—');
     return `
     <tr>
       <td class="cn">${x.nombre}</td>
       <td>${x.tipo}</td>
       <td><span class="pill ${nueva?'p-on':'p-off'}">${nueva?'nueva':'existente'}</span></td>
       <td class="num">${x.budget!=null?'€'+x.budget:'—'}</td>
-      <td class="num roas ${roasCls(x.roas)}">${x.roas!=null?x.roas.toFixed(1)+'x':'—'}</td>
+      <td class="num">${roasCell}</td>
       <td class="num hide-m">${pctES(x.acos)}</td>
       <td class="num hide-m">${eur(x.ventas)}</td>
       <td class="num hide-m">${eur(x.inversion)}</td>
