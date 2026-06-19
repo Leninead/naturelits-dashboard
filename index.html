@@ -922,16 +922,15 @@ function renderCamp(c){
   const roasCls=r=>r==null?"":r>6?"roas-hi":r>=3?"roas-ok":r>=1?"roas-mid":"roas-low";
   document.querySelector("#camp tbody").innerHTML = c.map(x=>{
     const nueva=x.nuevo==="nueva";
-    // "en learning": campaña nueva que todavia no registro venta (ROAS vacio/0)
-    const enLearning = nueva && (x.roas==null || x.roas===0);
-    const roasCell = enLearning
-      ? `<span class="roas-learn">en learning</span>`
-      : (x.roas!=null ? `<span class="roas ${roasCls(x.roas)}">${x.roas.toFixed(1)+'x'}</span>` : '—');
+    // campaña nueva sin venta todavia (ROAS vacio/0) → etiqueta "nueva · en marcha"
+    const enMarcha = nueva && (x.roas==null || x.roas===0);
+    const badgeTxt = enMarcha ? 'nueva · en marcha' : (nueva ? 'nueva' : 'existente');
+    const roasCell = (x.roas!=null && x.roas>0) ? `<span class="roas ${roasCls(x.roas)}">${x.roas.toFixed(1)+'x'}</span>` : '—';
     return `
     <tr>
       <td class="cn">${x.nombre}</td>
       <td>${x.tipo}</td>
-      <td><span class="pill ${nueva?'p-on':'p-off'}">${nueva?'nueva':'existente'}</span></td>
+      <td><span class="pill ${nueva?'p-on':'p-off'}">${badgeTxt}</span></td>
       <td class="num">${x.budget!=null?'€'+x.budget:'—'}</td>
       <td class="num">${roasCell}</td>
       <td class="num hide-m">${pctES(x.acos)}</td>
