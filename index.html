@@ -360,14 +360,14 @@ footer b{color:var(--tinta)}
   <section id="s-camp" class="panel" data-tab="campanas">
     <div class="shead">
       <span class="snum">03</span><h2>Campañas · dónde metemos la aguja</h2>
-      <div class="snote">Eficiencia por campaña · acumulado 30 días</div>
+      <div class="snote">Eficiencia por campaña · ventana 19-25 jun</div>
     </div>
     <div style="overflow-x:auto">
       <table class="tbl" id="camp">
         <thead><tr>
           <th>Campaña</th><th>Tipo</th><th>Estado</th>
           <th class="num">Budget/d</th><th class="num">ROAS</th>
-          <th class="num hide-m">ACoS</th><th class="num hide-m">Ventas</th>
+          <th class="num hide-m">ACoS</th><th class="num hide-m">CPC</th><th class="num hide-m">Clicks</th><th class="num hide-m">Órdenes</th><th class="num hide-m">Ventas</th>
           <th class="num hide-m">Inversión</th>
         </tr></thead>
         <tbody></tbody>
@@ -908,8 +908,11 @@ function mapCampanas(rows){
       budget:numES(r["Budget/día (€)"]||r["Budget/dia (€)"]||r.Budget),
       roas:numES(r.ROAS),
       acos:(r.ACoS!=null && String(r.ACoS).trim()!=="") ? String(r.ACoS).trim() : (r.Acos||null),
-      ventas:numES(r["Ventas 30d (€) · 13may-12jun"]||r["Ventas 30d (€)"]||r["Ventas 30d"]||r.Ventas),
-      inversion:numES(r["Inversión 30d (€)"]||r["Inversion 30d (€)"]||r["Inversión 30d"]||r["Inversion 30d"]),
+      ventas:numES(r["Ventas 19-25jun (€)"]||r["Ventas 30d (€) · 13may-12jun"]||r["Ventas 30d (€)"]||r["Ventas 30d"]||r.Ventas),
+      inversion:numES(r["Inversión 19-25jun (€)"]||r["Inversión 30d (€)"]||r["Inversion 30d (€)"]||r["Inversión 30d"]||r["Inversion 30d"]),
+      clicks:numES(r.Clicks),
+      cpc:numES(r["CPC (€)"]||r.CPC),
+      ordenes:numES(r["Órdenes"]||r.Ordenes||r.Orders),
       nuevo:/^nuev/i.test(String(r.Nuevo||r.nuevo||"").trim())?"nueva":"existente"   // columna Nuevo: nueva/existente; default existente
     };
   });
@@ -935,6 +938,9 @@ function renderCamp(c){
       <td class="num">${x.budget!=null?'€'+x.budget:'—'}</td>
       <td class="num">${roasCell}</td>
       <td class="num hide-m">${pctES(x.acos)}</td>
+      <td class="num hide-m">${x.cpc!=null?'€'+x.cpc.toFixed(2).replace('.',','):'—'}</td>
+      <td class="num hide-m">${x.clicks!=null?x.clicks.toLocaleString('es-ES'):'—'}</td>
+      <td class="num hide-m">${x.ordenes!=null?x.ordenes:'—'}</td>
       <td class="num hide-m">${eur(x.ventas)}</td>
       <td class="num hide-m">${eur(x.inversion)}</td>
     </tr>`;}).join("");
