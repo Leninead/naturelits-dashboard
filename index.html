@@ -798,10 +798,10 @@ function renderVeredicto(rows){
 }
 function renderWoW(wow){ renderComparativa(wow); }
 
-/* ── Comparativa · por familia · 2 semanas Lun-Dom (Modelos_Ventanas) ── */
+/* ── Comparativa · por familia · ventana 7d ancla-jueves (Modelos_Ventanas) ── */
 const VENT_COLS=[
-  {k:"Ventas_1-7jun",  h:"Ventas 1-7 jun"},
-  {k:"Ventas_8-14jun", h:"Ventas 8-14 jun"}
+  {k:"Ventas_12-18jun", h:"Ventas 12-18 jun"},
+  {k:"Ventas_19-25jun", h:"Ventas 19-25 jun"}
 ];
 /* Δ en € con signo y color (verde positivo / rojo negativo); "—" si falta una celda */
 function eurDelta(n){
@@ -820,40 +820,41 @@ function renderFamVentanas(rows){
     const fam=(r.Familia||"").trim();
     const isTot=/^total/i.test(fam);
     const isSer=/serene/i.test(fam);
-    const cur=numES(r["Ventas_8-14jun"]), prev=numES(r["Ventas_1-7jun"]);
+    const cur=numES(r["Ventas_19-25jun"]), prev=numES(r["Ventas_12-18jun"]);
     const d=(cur==null||prev==null)?null:cur-prev;   // Δ no rompe si una celda viene vacía
     const dd=eurDelta(d);
     const trcls=[isTot?"famv-total":"", isSer?"famv-serene":""].filter(Boolean).join(" ");
     const cells=VENT_COLS.map(c=>`<td>${eur(numES(r[c.k]))}</td>`).join("");
-    const inv=`<td>${eur(numES(r["Inv_SP_1-7jun"]))}</td><td>${eur(numES(r["Inv_SP_8-14jun"]))}</td>`;   // Inversión Sponsored Products por familia (1-7 y 8-14 jun); eur() → "—" si vacío
+    const inv=`<td>${eur(numES(r["Inv_SP_12-18jun"]))}</td><td>${eur(numES(r["Inv_SP_19-25jun"]))}</td>`;   // Inversión Sponsored Products por familia (12-18 y 19-25 jun); eur() → "—" si vacío
     const lectura=(r.Lectura||"").trim();
     return `<tr${trcls?` class="${trcls}"`:""}>
       <td>${fam||"—"}</td>${cells}<td class="${dd.cls}">${dd.txt}</td>${inv}
       <td class="famv-lectura">${lectura||"—"}</td></tr>`;
   }).join("");
   const _tot=rows.find(r=>/^total/i.test((r.Familia||"").trim()))||{};
-  const _tPrev=numES(_tot["Ventas_1-7jun"]), _tCur=numES(_tot["Ventas_8-14jun"]);
+  const _tPrev=numES(_tot["Ventas_12-18jun"]), _tCur=numES(_tot["Ventas_19-25jun"]);
   const _mil=n=>n==null?"—":Math.round(n).toLocaleString("es-ES");
   const _pct = _tPrev? Math.round((_tCur-_tPrev)/_tPrev*100) : 0;
-  const banner = `La facturación total ${_tCur>=_tPrev?'subió a':'bajó a'} <b>${_mil(_tCur)} €</b> (${_pct>=0?'+':''}${_pct}% vs. la semana anterior). El foco de trabajo sigue en <b>Serene</b> (~60% del catálogo): recibe más visitas e inversión, pero la conversión de la ficha bajó. Recuperar ese cierre es la palanca de mayor impacto.`;
+  const banner = `La facturación total ${_tCur>=_tPrev?'subió a':'bajó a'} <b>${_mil(_tCur)} €</b> (${_pct>=0?'+':''}${_pct}% vs. la ventana anterior). El foco de trabajo sigue en <b>Serene</b> (~60% del catálogo): concentra el tráfico y la inversión, y la conversión de su ficha es la palanca que define el resultado.`;
   el.innerHTML=`
-    <div class="famv-tit">Por familia · 2 semanas</div>
-    <div class="famv-sub">Ventas del negocio · Semana (Lun-Dom) · foco de mejora por familia</div>
+    <div class="famv-tit">Por familia · últimos 7 días vs. previos</div>
+    <div class="famv-sub">Ventas del negocio · Últimos 7 días · cierre jueves · foco de mejora por familia</div>
     <div class="famv-banner">${banner}</div>
     <div style="overflow-x:auto"><table class="wt">
-      <thead><tr><th>Familia</th>${VENT_COLS.map(c=>`<th>${c.h}</th>`).join("")}<th>Δ Ventas</th><th>Inv. SP 1-7 jun</th><th>Inv. SP 8-14 jun</th><th>Lectura</th></tr></thead>
+      <thead><tr><th>Familia</th>${VENT_COLS.map(c=>`<th>${c.h}</th>`).join("")}<th>Δ Ventas</th><th>Inv. SP 12-18 jun</th><th>Inv. SP 19-25 jun</th><th>Lectura</th></tr></thead>
       <tbody>${body}</tbody></table></div>
     <div class="pricefoot">Inv. = Sponsored Products; no incluye SB/SD (no atribuibles por modelo).</div>`;
 }
 
 /* ── Glosario (cliente) ── */
 const GLOS=[
-  ["ROAS","Por cada € invertido en publicidad, cuántos € de venta vuelven.",["≥4x","3–4x","<3x"]],
+  ["ROAS","Por cada € invertido en publicidad, cuántos € de venta vuelven.",["≥6x","3–6x","<3x"]],
   ["ACoS","Qué % de la venta se va en publicidad.",["≤20%","20–30%",">30%"]],
   ["TACoS","Publicidad sobre el total de ventas de la cuenta — mide la dependencia del ads.",["≤8%","8–15%",">15%"]],
   ["CVR","De cada 100 visitas, cuántas compran.",["≥2,5%","1,5–2,5%","<1,5%"]],
   ["BuyBox","% del tiempo que tu oferta es la que se compra con 1 click.",["≥95%","88–95%","<88%"]],
-  ["CTR","De cada 100 que ven el anuncio, cuántos entran.",["≥1%","0,50–1%","<0,50%"]],
+  ["CTR publicidad","De cada 100 que ven el anuncio, cuántos entran (tráfico de pago).",["≥1%","0,50–1%","<0,50%"]],
+  ["CTR orgánico","Mismo concepto en resultados no pagados; aquí un CTR más bajo es normal, el estándar es menos exigente que en publicidad."],
   ["Impresiones","Veces que el anuncio se mostró."],
   ["Negativizar","Bloquear búsquedas que gastan sin vender."],
   ["Harvest","Convertir una búsqueda ganadora en campaña propia."],
