@@ -604,7 +604,7 @@ function renderBizKPIs(wow){
   const toN=v=>parseFloat(String(v).replace(/[€%\s]/g,"").replace(",","."))||0;
   const items=[
     {lbl:"Ventas totales", val:eur(toN(c.Ventas_Totales)), d:pctChg(toN(c.Ventas_Totales),toN(p.Ventas_Totales)), up:true},
-    {lbl:"CVR",            val:pctES(c.CVR),           d:pctChg(toN(c.CVR),toN(p.CVR)),             up:true},
+    {lbl:"CVR publicidad", val:pctES(c.CVR),           d:pctChg(toN(c.CVR),toN(p.CVR)),             up:true},
     {lbl:"BuyBox",         val:pctES(c.BuyBox),        d:pctChg(toN(c.BuyBox),toN(p.BuyBox)),       up:true}
   ];
   document.getElementById("bizkpis").innerHTML=items.map((k,i)=>`
