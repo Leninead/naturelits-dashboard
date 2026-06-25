@@ -755,8 +755,11 @@ function evoDelta(va,vb,pp,good){
 function evoTableHTML(){
   const wPrev=COMPWOW.length>=2?COMPWOW[COMPWOW.length-2]:null;
   const wCur =COMPWOW.length>=1?COMPWOW[COMPWOW.length-1]:null;
-  const y25=COMPYOY.find(r=>/2025/.test(String(r.Periodo)))||null;
-  const y26=COMPYOY.find(r=>/2026/.test(String(r.Periodo)))||null;
+  // Ventana actual del Evolutivo — match EXPLÍCITO por período (no por año suelto,
+  // que agarraría la 1ª fila del año). Actualizar PERIODO_ACTUAL cada semana.
+  const PERIODO_ACTUAL="19-25 jun";
+  const y25=COMPYOY.find(r=>String(r.Periodo).includes(PERIODO_ACTUAL)&&/2025/.test(String(r.Periodo)))||null;
+  const y26=COMPYOY.find(r=>String(r.Periodo).includes(PERIODO_ACTUAL)&&/2026/.test(String(r.Periodo)))||null;
   const g=(o,k)=>o?o[k]:null;
   // good: 1 sube=bueno · -1 baja=bueno · 0 neutral (igual que WROWS)
   const M=[
