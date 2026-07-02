@@ -761,19 +761,20 @@ function evoDelta(va,vb,pp,good){
 function evoTableHTML(){
   const wPrev=COMPWOW.length>=2?COMPWOW[COMPWOW.length-2]:null;
   const wCur =COMPWOW.length>=1?COMPWOW[COMPWOW.length-1]:null;
-  // Ventana actual del Evolutivo — match EXPLÍCITO por período (no por año suelto,
-  // que agarraría la 1ª fila del año). Actualizar PERIODO_ACTUAL cada semana.
-  const PERIODO_ACTUAL="19-25 jun";
-  const y25=COMPYOY.find(r=>String(r.Periodo).includes(PERIODO_ACTUAL)&&/2025/.test(String(r.Periodo)))||null;
-  const y26=COMPYOY.find(r=>String(r.Periodo).includes(PERIODO_ACTUAL)&&/2026/.test(String(r.Periodo)))||null;
+  // Ventana del Evolutivo — se deriva del WoW (wCur/wPrev), no hardcodeada:
+  // match por la etiqueta de Semana + año, para no agarrar la 1ª fila del año.
+  const findYoY=(sem,yr)=> sem ? (COMPYOY.find(r=>String(r.Periodo).includes(sem)&&new RegExp(yr).test(String(r.Periodo)))||null) : null;
+  const y26cur = wCur ? findYoY(wCur.Semana,"2026") : null;
+  const y26prev= wPrev? findYoY(wPrev.Semana,"2026") : null;
+  const y25    = wCur ? findYoY(wCur.Semana,"2025") : null;
   const g=(o,k)=>o?o[k]:null;
   // good: 1 sube=bueno · -1 baja=bueno · 0 neutral (igual que WROWS)
   const M=[
     {l:"Ventas totales", f:"eur", pp:0, good:1,  c1:g(y25,"Ventas_Totales"), c2:g(wPrev,"Ventas_Totales"), c3:g(wCur,"Ventas_Totales")},
-    {l:"Sesiones",       f:"num", pp:0, good:1,  c1:g(y25,"Sessions"),       c2:null,                       c3:g(y26,"Sessions")},
-    {l:"Unidades",       f:"num", pp:0, good:1,  c1:g(y25,"Units"),          c2:null,                       c3:g(y26,"Units")},
+    {l:"Sesiones",       f:"num", pp:0, good:1,  c1:g(y25,"Sessions"),       c2:g(y26prev,"Sessions"),      c3:g(y26cur,"Sessions")},
+    {l:"Unidades",       f:"num", pp:0, good:1,  c1:g(y25,"Units"),          c2:g(y26prev,"Units"),         c3:g(y26cur,"Units")},
     {l:"BuyBox",         f:"pct", pp:1, good:1,  c1:g(y25,"BuyBox"),         c2:g(wPrev,"BuyBox"),          c3:g(wCur,"BuyBox")},
-    {l:"CVR negocio",    f:"pct", pp:1, good:1,  c1:g(y25,"CVR_negocio"),    c2:null,                       c3:g(y26,"CVR_negocio")},
+    {l:"CVR negocio",    f:"pct", pp:1, good:1,  c1:g(y25,"CVR_negocio"),    c2:g(y26prev,"CVR_negocio"),   c3:g(y26cur,"CVR_negocio")},
     {l:"Inversión",      f:"eur", pp:0, good:0,  c1:null,                    c2:g(wPrev,"Spend"),           c3:g(wCur,"Spend")},
     {l:"ACoS",           f:"pct", pp:1, good:-1, c1:null,                    c2:g(wPrev,"ACoS"),            c3:g(wCur,"ACoS")},
     {l:"ROAS",           f:"x",   pp:0, good:1,  c1:null,                    c2:g(wPrev,"ROAS"),            c3:g(wCur,"ROAS")},
@@ -784,7 +785,7 @@ function evoTableHTML(){
   ];
   const h1=g(y25,"Periodo")||"Año ant.", h2=(wPrev&&wPrev.Semana)||"Sem ant.", h3=(wCur&&wCur.Semana)||"Sem actual";
   const rows=M.map(m=>`<tr><td>${m.l}</td><td>${evoCell(m.c1,m.f)}</td><td>${evoCell(m.c2,m.f)}</td><td>${evoCell(m.c3,m.f)}</td>${evoDelta(m.c1,m.c3,m.pp,m.good)}${evoDelta(m.c2,m.c3,m.pp,m.good)}</tr>`).join("");
-  const nota=(g(y26,"Nota")||g(y25,"Nota")||"Publicidad: histórico 2025 no disponible");
+  const nota=(g(y26cur,"Nota")||g(y25,"Nota")||"Publicidad: histórico 2025 no disponible");
   return `<div style="overflow-x:auto"><table class="wt"><thead><tr><th>Métrica</th><th>${h1}</th><th>${h2}</th><th>${h3}</th><th>Δ YoY</th><th>Δ WoW</th></tr></thead><tbody>${rows}</tbody></table></div>
     <div class="pricefoot">${nota}</div>`;
 }
@@ -808,10 +809,12 @@ function renderVeredicto(rows){
 function renderWoW(wow){ renderComparativa(wow); }
 
 /* ── Comparativa · por familia · ventana 7d ancla-jueves (Modelos_Ventanas) ── */
-const VENT_COLS=[
-  {k:"Ventas_12-18jun", h:"Ventas 12-18 jun"},
-  {k:"Ventas_19-25jun", h:"Ventas 19-25 jun"}
-];
+function famWinCols(rows){
+  const keys = rows.length ? Object.keys(rows[0]) : [];
+  return { ventas: keys.filter(k=>/^Ventas_/i.test(k)),
+           inv:    keys.filter(k=>/^Inv_SP_/i.test(k)) };
+}
+const prettyWin = k => k.replace(/^(Ventas_|Inv_SP_)/i,"").replace(/(\d)([a-zA-Z]{3})/g,"$1 $2");
 /* Δ en € con signo y color (verde positivo / rojo negativo); "—" si falta una celda */
 function eurDelta(n){
   if(n==null) return {txt:"—", cls:"d-flat"};
@@ -822,37 +825,41 @@ function eurDelta(n){
 function renderFamVentanas(rows){
   const el=document.getElementById("famVentanas");
   if(!el) return;
-  rows=cleanRows(rows);                       // descarta vacías y filas ⓘ
+  rows=cleanRows(rows);
   if(!rows.length){ el.style.display="none"; el.innerHTML=""; return; }
+  const {ventas, inv} = famWinCols(rows);
+  if(ventas.length<2){ el.style.display="none"; el.innerHTML=""; return; }
   el.style.display="";
+  const vPrev=ventas[0], vCur=ventas[1], iPrev=inv[0]||null, iCur=inv[1]||null;
   const body=rows.map(r=>{
     const fam=(r.Familia||"").trim();
-    const isTot=/^total/i.test(fam);
-    const isSer=/serene/i.test(fam);
-    const cur=numES(r["Ventas_19-25jun"]), prev=numES(r["Ventas_12-18jun"]);
-    const d=(cur==null||prev==null)?null:cur-prev;   // Δ no rompe si una celda viene vacía
+    const isTot=/^total/i.test(fam), isSer=/serene/i.test(fam);
+    const cur=numES(r[vCur]), prev=numES(r[vPrev]);
+    const d=(cur==null||prev==null)?null:cur-prev;
     const dd=eurDelta(d);
     const trcls=[isTot?"famv-total":"", isSer?"famv-serene":""].filter(Boolean).join(" ");
-    const cells=VENT_COLS.map(c=>`<td>${eur(numES(r[c.k]))}</td>`).join("");
-    const inv=`<td>${eur(numES(r["Inv_SP_12-18jun"]))}</td><td>${eur(numES(r["Inv_SP_19-25jun"]))}</td>`;   // Inversión Sponsored Products por familia (12-18 y 19-25 jun); eur() → "—" si vacío
+    const cells=`<td>${eur(numES(r[vPrev]))}</td><td>${eur(numES(r[vCur]))}</td>`;
+    const invCells=`<td>${eur(iPrev?numES(r[iPrev]):null)}</td><td>${eur(iCur?numES(r[iCur]):null)}</td>`;
     const lectura=(r.Lectura||"").trim();
     return `<tr${trcls?` class="${trcls}"`:""}>
-      <td>${fam||"—"}</td>${cells}<td class="${dd.cls}">${dd.txt}</td>${inv}
+      <td>${fam||"—"}</td>${cells}<td class="${dd.cls}">${dd.txt}</td>${invCells}
       <td class="famv-lectura">${lectura||"—"}</td></tr>`;
   }).join("");
   const _tot=rows.find(r=>/^total/i.test((r.Familia||"").trim()))||{};
-  const _tPrev=numES(_tot["Ventas_12-18jun"]), _tCur=numES(_tot["Ventas_19-25jun"]);
+  const _tPrev=numES(_tot[vPrev]), _tCur=numES(_tot[vCur]);
   const _mil=n=>n==null?"—":Math.round(n).toLocaleString("es-ES");
-  const _pct = _tPrev? Math.round((_tCur-_tPrev)/_tPrev*100) : 0;
-  const banner = `La facturación total ${_tCur>=_tPrev?'subió a':'bajó a'} <b>${_mil(_tCur)} €</b> (${_pct>=0?'+':''}${_pct}% vs. la ventana anterior). El foco de trabajo sigue en <b>Serene</b> (~60% del catálogo): concentra el tráfico y la inversión, y la conversión de su ficha es la palanca que define el resultado.`;
+  const _pct=_tPrev?Math.round((_tCur-_tPrev)/_tPrev*100):0;
+  const enCurso=_tCur<_tPrev;
+  const banner=`La facturación total ${_tCur>=_tPrev?'subió a':'quedó en'} <b>${_mil(_tCur)} €</b> (${_pct>=0?'+':''}${_pct}% vs. la ventana anterior${enCurso?'; ventana en curso, atribución abierta':''}). El foco de trabajo sigue en <b>Serene</b> (~60% del catálogo): concentra el tráfico y la inversión, y la conversión de su ficha es la palanca que define el resultado.`;
+  const invPrevTot=iPrev?numES(_tot[iPrev]):null, invCurTot=iCur?numES(_tot[iCur]):null;
   el.innerHTML=`
     <div class="famv-tit">Por familia · últimos 7 días vs. previos</div>
     <div class="famv-sub">Ventas del negocio · Últimos 7 días · cierre jueves · foco de mejora por familia</div>
     <div class="famv-banner">${banner}</div>
     <div style="overflow-x:auto"><table class="wt">
-      <thead><tr><th>Familia</th>${VENT_COLS.map(c=>`<th>${c.h}</th>`).join("")}<th>Δ Ventas</th><th>Inv. SP 12-18 jun</th><th>Inv. SP 19-25 jun</th><th>Lectura</th></tr></thead>
+      <thead><tr><th>Familia</th><th>Ventas ${prettyWin(vPrev)}</th><th>Ventas ${prettyWin(vCur)}</th><th>Δ Ventas</th><th>Inv. SP ${iPrev?prettyWin(iPrev):''}</th><th>Inv. SP ${iCur?prettyWin(iCur):''}</th><th>Lectura</th></tr></thead>
       <tbody>${body}</tbody></table></div>
-    <div class="pricefoot">Inv. = inversión en Sponsored Products por producto anunciado (suma exacta por familia: €697 / €590). La inversión total de la cuenta (€746 / €751, en Resultados y Comparativa) incluye además marca y recuperación de visitantes, que no se atribuyen por modelo — por eso este cuadro usa solo SP.</div>`;
+    <div class="pricefoot">Inv. = inversión en Sponsored Products por producto anunciado (suma exacta por familia: ${eur(invPrevTot)} / ${eur(invCurTot)}). La inversión total de la cuenta (visible en Resultados y Comparativa) incluye además marca y recuperación de visitantes, que no se atribuyen por modelo — por eso este cuadro usa solo SP.</div>`;
 }
 
 /* ── Glosario (cliente) ── */
