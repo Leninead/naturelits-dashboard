@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Naturelits ES · Prime Day — Lectura del evento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,900&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4F1EA;
+    --panel:#FBFAF6;
+    --ink:#171F1B;
+    --ink-soft:#5B645C;
+    --ink-faint:#8B9089;
+    --line:#DED9CE;
+    --green:#2F6E4F;
+    --green-soft:#EDF2EE;
+    --amber:#9A7B3F;
+    --red:#B4552B;
+    --blue:#1E3A5F;
+    --dark:#141B17;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;line-height:1.55;font-size:15px;padding:clamp(16px,4vw,52px)}
+  .wrap{max-width:920px;margin:0 auto}
+
+  /* ===== HEADER ===== */
+  .top{border-bottom:2px solid var(--ink);padding-bottom:18px;margin-bottom:6px}
+  .kick{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-soft);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:22px}
+  h1.title{font-family:'Fraunces',serif;font-weight:900;font-size:clamp(28px,5.4vw,54px);line-height:1.02;letter-spacing:-0.02em;max-width:17ch}
+  h1.title .g{color:var(--green)}
+  .stand{margin-top:20px;max-width:64ch;font-size:clamp(15px,1.7vw,17.5px);color:var(--ink-soft)}
+  .stand strong{color:var(--ink);font-weight:600}
+  .disc{margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-faint)}
+
+  /* ===== SECTION ===== */
+  section{margin-top:46px;scroll-margin-top:20px}
+  .shead{display:flex;align-items:baseline;gap:12px;margin-bottom:6px}
+  .snum{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--green)}
+  .shead h2{font-family:'Fraunces',serif;font-weight:600;font-size:clamp(21px,3.2vw,30px);line-height:1.1;letter-spacing:-0.01em}
+  .sdek{color:var(--ink-soft);max-width:66ch;margin:0 0 20px 0;font-size:14.5px}
+
+  /* ===== NUMBERS GRID ===== */
+  .nums{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  @media(min-width:640px){.nums{grid-template-columns:repeat(3,1fr)}}
+  .ncard{background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:16px 18px;border-top:3px solid var(--green)}
+  .ncard.flat{border-top-color:var(--amber)}
+  .ncard.soft{border-top-color:var(--line)}
+  .ncard .nlab{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:7px}
+  .ncard .nval{font-family:'Fraunces',serif;font-weight:900;font-size:30px;line-height:1;color:var(--ink)}
+  .ncard .ndelta{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;margin-top:6px}
+  .ndelta.up{color:var(--green)}.ndelta.down{color:var(--red)}.ndelta.neu{color:var(--ink-faint)}
+  .ncard .nnote{font-size:11.5px;color:var(--ink-soft);margin-top:5px}
+
+  /* ===== HERO INSIGHT (contraste) ===== */
+  .insight{margin-top:22px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:clamp(18px,3vw,28px);position:relative;overflow:hidden}
+  .insight::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--green)}
+  .insight .ieye{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:12px}
+  .insight .ilead{font-family:'Fraunces',serif;font-weight:600;font-size:clamp(18px,2.4vw,23px);line-height:1.25;letter-spacing:-0.01em;margin-bottom:14px}
+  .insight p{font-size:14px;color:var(--ink-soft);max-width:68ch}
+  .insight p b{color:var(--ink);font-weight:600}
+  .split{display:grid;gap:12px;margin:16px 0}
+  @media(min-width:600px){.split{grid-template-columns:1fr 1fr}}
+  .half{padding:14px 16px;border-radius:5px}
+  .half.a{background:#EDF0F4;border:1px solid #D5DDE6}
+  .half.b{background:var(--green-soft);border:1px solid #D3E2D8}
+  .half .htag{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px;font-weight:600}
+  .half.a .htag{color:var(--blue)}.half.b .htag{color:var(--green)}
+  .half .hnum{font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:600;color:var(--ink);display:block;margin-bottom:4px}
+  .half p{font-size:12.5px;color:var(--ink-soft)}
+
+  /* ===== FLOW (de dónde vino) ===== */
+  .flow{display:grid;gap:12px}
+  @media(min-width:680px){.flow{grid-template-columns:1fr 1fr 1fr;align-items:stretch}}
+  .fstep{background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:16px 18px;position:relative}
+  .fstep .fn{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--green);font-weight:600;margin-bottom:8px}
+  .fstep h3{font-size:14.5px;font-weight:600;margin-bottom:6px;line-height:1.2}
+  .fstep p{font-size:12.5px;color:var(--ink-soft)}
+  .fstep .fnum{font-family:'IBM Plex Mono',monospace;color:var(--ink);font-weight:600}
+
+  /* ===== LEARNING (dark) ===== */
+  .learn{background:var(--dark);color:#E9E7DF;border-radius:6px;padding:clamp(20px,3.5vw,34px);margin-top:24px}
+  .learn .leye{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8E958C;margin-bottom:14px}
+  .learn h2{font-family:'Fraunces',serif;font-weight:600;font-size:clamp(20px,3.2vw,28px);line-height:1.15;color:#fff;margin-bottom:12px;max-width:22ch}
+  .learn h2 .hl{color:#6FBF98}
+  .learn p{color:#B9BEB4;max-width:64ch;font-size:14.5px;margin-bottom:8px}
+  .learn p b{color:#fff;font-weight:600}
+
+  /* ===== NEXT (jugada) ===== */
+  .next{margin-top:24px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:clamp(18px,3vw,28px)}
+  .next .neye{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:12px}
+  .next h3{font-family:'Fraunces',serif;font-weight:600;font-size:20px;margin-bottom:10px;line-height:1.2}
+  .next p{font-size:14px;color:var(--ink-soft);max-width:66ch;margin-bottom:14px}
+  .next p b{color:var(--ink);font-weight:600}
+  .ask{background:var(--green-soft);border:1px solid #D3E2D8;border-radius:5px;padding:16px 18px}
+  .ask .ah{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--green);margin-bottom:8px;font-weight:600}
+  .ask p{font-size:14px;color:var(--ink);margin:0}
+
+  footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-faint);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <div class="top">
+    <div class="kick"><span>Naturelits ES · Prime Day</span><span>Ventana 20–26 jun 2026</span></div>
+    <h1 class="title">Vendimos <span class="g">+37%</span> gastando <span class="g">un 15% menos</span> en publicidad.</h1>
+    <p class="stand">El evento dejó un aprendizaje más valioso que las ventas: <strong>la cuenta creció con fuerza mientras la inversión publicitaria bajaba</strong>. Eso revela dónde está la verdadera palanca de crecimiento — y no es gastar más en publicidad.</p>
+    <p class="disc">Ventana completa del evento (Prime Day 23–26 jun incluido) · vs. semana previa 13–19 jun · 3 plataformas de publicidad.</p>
+  </div>
+
+  <!-- 01 LOS NÚMEROS -->
+  <section>
+    <div class="shead"><span class="snum">01</span><h2>Los números del evento</h2></div>
+    <p class="sdek">La ventana completa del evento (20–26 jun) frente a la semana previa (13–19 jun). Lo que salta a la vista: las ventas suben con fuerza mientras la inversión publicitaria baja.</p>
+    <div class="nums">
+      <div class="ncard"><div class="nlab">Facturación total</div><div class="nval">€18.497</div><div class="ndelta up">↑ 37,5% vs. semana previa</div></div>
+      <div class="ncard"><div class="nlab">Ventas por publicidad</div><div class="nval">€5.019</div><div class="ndelta up">↑ 27,3%</div></div>
+      <div class="ncard flat"><div class="nlab">Inversión publicitaria</div><div class="nval">€778</div><div class="ndelta down">↓ 15,2% — gastamos menos</div></div>
+      <div class="ncard"><div class="nlab">Retorno de la publicidad</div><div class="nval">6,45×</div><div class="ndelta up">↑ desde 4,30× · +50%</div></div>
+      <div class="ncard"><div class="nlab">Coste publicitario / ventas</div><div class="nval">15,5%</div><div class="ndelta up">↓ 7,7 puntos · más eficiente</div></div>
+      <div class="ncard"><div class="nlab">Órdenes</div><div class="nval">136</div><div class="ndelta up">↑ 17,2%</div></div>
+    </div>
+  </section>
+
+  <!-- 02 EL CONTRASTE -->
+  <section>
+    <div class="shead"><span class="snum">02</span><h2>El dato que importa</h2></div>
+    <p class="sdek">No es cuánto vendimos —en un evento eso se espera—. Es la relación entre lo que subió y lo que costó.</p>
+    <div class="insight">
+      <div class="ieye">Lo que revela el evento</div>
+      <div class="ilead">Las ventas subieron mientras la inversión bajaba. La publicidad hizo mucho más con menos plata.</div>
+      <div class="split">
+        <div class="half b"><div class="htag">Las ventas</div><span class="hnum">+37,5%</span><p>Facturación total, y +27% en ventas por publicidad.</p></div>
+        <div class="half a"><div class="htag">La inversión</div><span class="hnum">−15,2%</span><p>La inversión publicitaria <b>bajó</b> respecto a la semana anterior.</p></div>
+      </div>
+      <p>Normalmente, para conseguir un salto así de ventas haría falta subir la inversión un 30–60%. Acá pasó lo contrario: <b>vendimos mucho más gastando menos</b>. Eso significa que el motor del crecimiento no fue el presupuesto publicitario — fue otra cosa.</p>
+    </div>
+  </section>
+
+  <!-- 03 DE DÓNDE VINO -->
+  <section>
+    <div class="shead"><span class="snum">03</span><h2>De dónde vino el crecimiento</h2></div>
+    <p class="sdek">Tres piezas encajan y explican el salto sin necesidad de más inversión.</p>
+    <div class="flow">
+      <div class="fstep"><div class="fn">01</div><h3>El evento trajo tráfico de compra</h3><p>Prime Day multiplica las visitas con intención de comprar. La ficha recibió mucho más tráfico cualificado sin que tuviéramos que pagarlo.</p></div>
+      <div class="fstep"><div class="fn">02</div><h3>La ficha convirtió mucho más</h3><p>Con ese tráfico, la conversión de la ficha principal pasó de <span class="fnum">1,1% a 1,9%</span> — con el mismo volumen de visitas. Cada visita valió casi el doble.</p></div>
+      <div class="fstep"><div class="fn">03</div><h3>La publicidad cosechó, no infló</h3><p>Con menos exposición pagada (las impresiones bajaron ~7%), la publicidad capturó ese tráfico de forma mucho más eficiente. Menos gasto, más retorno.</p></div>
+    </div>
+  </section>
+
+  <!-- 04 EL APRENDIZAJE -->
+  <div class="learn">
+    <div class="leye">04 · El aprendizaje</div>
+    <h2>La palanca de esta cuenta es <span class="hl">tráfico y conversión de ficha</span> — no más presupuesto publicitario.</h2>
+    <p>El evento fue una prueba en vivo: cuando llega más tráfico y la ficha convierte mejor, <b>la cuenta crece sola, sin inflar la inversión</b>. La publicidad ya está en su punto de eficiencia; empujarla con más presupuesto no es lo que mueve la aguja.</p>
+    <p>Lo que mueve la aguja es traer más tráfico cualificado a fichas que convierten. Ese es el camino de crecimiento — y es más rentable que subir el gasto publicitario.</p>
+  </div>
+
+  <!-- 05 LA JUGADA -->
+  <div class="next">
+    <div class="neye">05 · La próxima jugada</div>
+    <h3>Probar tráfico externo para acelerar el crecimiento orgánico</h3>
+    <p>Si más tráfico es lo que dispara las ventas, la jugada natural es <b>traer tráfico desde fuera de Amazon</b> (redes, otros canales) hacia las fichas que mejor convierten. Eso acelera la posición orgánica: más visitas y ventas mejoran el ranking, que a su vez trae más tráfico gratis — un efecto bola de nieve.</p>
+    <div class="ask">
+      <div class="ah">Para decidir con el cliente</div>
+      <p>Es una inversión de crecimiento distinta a la publicidad de siempre. Vale la pena evaluarla como coste de oportunidad: cuánto tráfico externo, hacia qué modelos, y qué retorno esperar. Lo dejamos planteado para definir juntos el siguiente paso.</p>
+    </div>
+  </div>
+
+  <footer>
+    <span>Naturelits ES · Amazon Ads · lectura del evento</span>
+    <span>Ventana 20–26 jun 2026 · vs. 13–19 jun</span>
+  </footer>
+
+</div>
+</body>
+</html>
