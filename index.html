@@ -608,15 +608,16 @@ function renderFam(fam){
 function renderBizKPIs(wow){
   const c=wow[wow.length-1],p=wow[wow.length-2]||c;
   const toN=v=>parseFloat(String(v).replace(/[€%\s]/g,"").replace(",","."))||0;
+  const ppN=v=>{const n=toN(v); return Math.abs(n)<=1?n*100:n;};
   const items=[
     {lbl:"Ventas totales", val:eur(toN(c.Ventas_Totales)), d:pctChg(toN(c.Ventas_Totales),toN(p.Ventas_Totales)), up:true},
-    {lbl:"CVR publicidad", val:pctES(c.CVR),           d:pctChg(toN(c.CVR),toN(p.CVR)),             up:true},
-    {lbl:"BuyBox",         val:pctES(c.BuyBox),        d:pctChg(toN(c.BuyBox),toN(p.BuyBox)),       up:true}
+    {lbl:"CVR negocio",    val:pctES(c.CVR),    d:ppN(c.CVR)-ppN(p.CVR),       up:true, unit:"pp"},
+    {lbl:"BuyBox",         val:pctES(c.BuyBox), d:ppN(c.BuyBox)-ppN(p.BuyBox), up:true, unit:"pp"}
   ];
   document.getElementById("bizkpis").innerHTML=items.map((k,i)=>`
     <div class="kpi" style="animation-delay:${i*70}ms"><div class="lbl">${k.lbl}</div>
       <div class="val">${k.val}</div>
-      <div class="delta ${cls(k.d,k.up)}">${arrow(k.d)} ${Math.abs(k.d).toFixed(1).replace(".",",")}% <span style="color:var(--gris);font-weight:400">WoW</span></div></div>`).join("");
+      <div class="delta ${cls(k.d,k.up)}">${arrow(k.d)} ${Math.abs(k.d).toFixed(1).replace(".",",")}${k.unit||"%"} <span style="color:var(--gris);font-weight:400">WoW</span></div></div>`).join("");
   const _sn=document.getElementById("bizSnote");
   if(_sn) _sn.textContent="Ventas totales, CVR y BuyBox · "+c.Semana+(wow.length>=2?(" vs "+wow[wow.length-2].Semana):"");
 }
@@ -888,6 +889,7 @@ function renderGlosario(){
 function renderRecos(wow){
   const el=document.getElementById("recoBanner");
   if(!el) return;
+  el.innerHTML=""; el.className="reco"; return;   // banner desactivado: el Veredicto lleva el mensaje
   if(!wow||wow.length<2){ el.innerHTML=""; el.className="reco"; return; }
   const cur=toN0(wow[wow.length-1].Ventas_Totales), prev=toN0(wow[wow.length-2].Ventas_Totales);
   const d=prev?((cur-prev)/prev*100):0;
