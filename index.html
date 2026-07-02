@@ -909,6 +909,12 @@ const campOn = e => /enabled|activ|^on$/i.test(String(e||""));
 /* agrupa Campanas_ASINs (campaña×ASIN) → una fila por campaña; activas por ROAS desc, pausadas al final */
 function mapCampanas(rows){
   rows=cleanRows(rows);
+  const _k = rows.length ? Object.keys(rows[0]) : [];
+  const vKey = _k.find(k=>/^Ventas\s/i.test(k)) || "Ventas";
+  const iKey = _k.find(k=>/^Inversi[oó]n\s/i.test(k)) || "Inversión";
+  const _win = vKey.replace(/^Ventas\s+/i,"").replace(/\s*\(€\)\s*$/,"").replace(/(\d)([a-zA-Z]{3})/g,"$1 $2");
+  const _sn = document.querySelector('#s-camp .snote');
+  if(_sn && _win) _sn.textContent = "Eficiencia por campaña · ventana "+_win;
   const groups={}, order=[];
   rows.forEach(r=>{
     const name=(r["Campaña"]||r.Campana||"").trim();
@@ -924,8 +930,8 @@ function mapCampanas(rows){
       budget:numES(r["Budget/día (€)"]||r["Budget/dia (€)"]||r.Budget),
       roas:numES(r.ROAS),
       acos:(r.ACoS!=null && String(r.ACoS).trim()!=="") ? String(r.ACoS).trim() : (r.Acos||null),
-      ventas:numES(r["Ventas 19-25jun (€)"]||r["Ventas 30d (€) · 13may-12jun"]||r["Ventas 30d (€)"]||r["Ventas 30d"]||r.Ventas),
-      inversion:numES(r["Inversión 19-25jun (€)"]||r["Inversión 30d (€)"]||r["Inversion 30d (€)"]||r["Inversión 30d"]||r["Inversion 30d"]),
+      ventas:numES(r[vKey]),
+      inversion:numES(r[iKey]),
       clicks:numES(r.Clicks),
       cpc:numES(r["CPC (€)"]||r.CPC),
       ordenes:numES(r["Órdenes"]||r.Ordenes||r.Orders),
