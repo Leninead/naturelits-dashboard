@@ -108,6 +108,9 @@ h2{font-family:'Fraunces',serif; font-weight:600; font-size:1.5rem; color:var(--
 .p-off{color:var(--gris); background:#eee}
 .roas{font-weight:600}
 .roas-hi{color:var(--verde)} .roas-ok{color:var(--naranja-2)} .roas-mid{color:var(--ambar)} .roas-low{color:var(--rojo)}
+/* valor monetario sospechoso: se señala, NUNCA se auto-corrige — el error tiene que verse */
+.badval{color:var(--rojo); font-weight:700; border-bottom:1px dotted var(--rojo); cursor:help}
+.badval::after{content:" ⚠"; font-weight:400}
 .roas-learn{color:var(--gris); font-style:italic; font-weight:600; font-size:.72rem}
 
 /* ── Acciones kanban ── */
@@ -908,6 +911,30 @@ function renderExec(){
   _ex.innerHTML=`En la línea base (25-31 may, antes de la optimización) las <b>ventas totales subieron +34,5% WoW</b> (€9.901 → €13.316), con el <b>CVR de 1,87% a 2,33%</b> y <span class="hl">BuyBox sano al 97,9%</span>. El advertising es eficiente: <b>ROAS 8,5x · ACoS 11,8% · TACoS 3,2%</b> — el ads pesa poco, la cuenta vende mayormente orgánico. <b>Serene lidera con el 57% de las ventas.</b> Desde el 2-jun la gestión se reorientó al segmento alto (Serene/Nature/Palace/Xstar) y se cortó gasto en 90x190 deficitario. <span class="hl">El primer WoW que mide esta gestión llega la próxima semana</span> — y vigilamos el efecto del cambio de precios del 5-jun sobre el BuyBox.`;
 }
 const campOn = e => /enabled|activ|^on$/i.test(String(e||""));
+/* ── Guard de valores monetarios (B6 del verificador) ──────────────────────
+   Una campaña NO puede gastar más que budget/día × días de la ventana × 3:
+   Amazon no lo permite salvo overspend excepcional. Y ningún importe llega
+   con "%" pegado salvo que la celda del Sheet tenga formato de porcentaje
+   (caso real 3-ago: 29,47 guardado como "2947,00%" → se leía 2947, 100x).
+   El guard SEÑALA, no corrige: un número tapado en silencio es peor que uno
+   visiblemente roto. */
+const MSG_SOSP = "valor sospechoso, revisar formato de celda en Sheet";
+function diasVentana(win){                    // "23-29 jul" → 7
+  const m = String(win||"").match(/(\d{1,2})\s*[-–]\s*(\d{1,2})/);
+  if(!m) return null;
+  const d = (+m[2]) - (+m[1]) + 1;
+  return (d>0 && d<=31) ? d : null;
+}
+function sospechaMoneda(crudo, valor, techo){
+  if(String(crudo==null?"":crudo).includes("%"))
+    return MSG_SOSP + " — llega con % (la celda tiene formato de porcentaje)";
+  if(valor!=null && techo!=null && valor>techo)
+    return MSG_SOSP + " — supera el techo de gasto posible ("+eur(techo)+")";
+  return null;
+}
+const eurGuard = (v, sosp) => sosp
+  ? `<span class="badval" title="${String(sosp).replace(/"/g,"&quot;")}">${eur(v)}</span>`
+  : eur(v);
 /* agrupa Campanas_ASINs (campaña×ASIN) → una fila por campaña; activas por ROAS desc, pausadas al final */
 function mapCampanas(rows){
   rows=cleanRows(rows);
@@ -923,10 +950,15 @@ function mapCampanas(rows){
     if(!name) return;
     if(!groups[name]){ groups[name]=r; order.push(name); }
   });
+  const _dias = diasVentana(_win);
   const arr=order.map(name=>{
     const r=groups[name];
+    const _bud = numES(r["Budget/día (€)"]||r["Budget/dia (€)"]||r.Budget);
+    // techo B6: budget/día × días de la ventana × 3. Sin budget o sin ventana → no evaluable.
+    const _techo = (_bud!=null && _dias!=null) ? _bud*_dias*3 : null;
     return {
       nombre:name,
+      _crudoInv:r[iKey], _crudoVen:r[vKey], _techo:_techo, _dias:_dias,
       tipo:(r.Tipo||"").trim(),
       estado:(r.Estado||"").trim(),
       budget:numES(r["Budget/día (€)"]||r["Budget/dia (€)"]||r.Budget),
@@ -965,8 +997,8 @@ function renderCamp(c){
       <td class="num hide-m">${x.cpc!=null?'€'+x.cpc.toFixed(2).replace('.',','):'—'}</td>
       <td class="num hide-m">${x.clicks!=null?x.clicks.toLocaleString('es-ES'):'—'}</td>
       <td class="num hide-m">${x.ordenes!=null?x.ordenes:'—'}</td>
-      <td class="num hide-m">${eur(x.ventas)}</td>
-      <td class="num hide-m">${eur(x.inversion)}</td>
+      <td class="num hide-m">${eurGuard(x.ventas, sospechaMoneda(x._crudoVen, null, null))}</td>
+      <td class="num hide-m">${eurGuard(x.inversion, sospechaMoneda(x._crudoInv, x.inversion, x._techo))}</td>
     </tr>`;}).join("");
 }
 /* semana Lun-Dom de una fecha ISO (YYYY-MM-DD) → {key: lunes ISO, label: "1-7 jun"} */
