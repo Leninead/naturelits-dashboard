@@ -1,0 +1,15 @@
+Fecha	Campaña	Acción	Producto_Afectado	Detalle	Estado	Métrica	Valor antes	Valor después	Resultado	Análisis	Ambito
+10-ago	NL | Serene150 | SP-KW | EXACT | colchones muelles ensacados 150x190	Ajuste de emplazamiento	—	164 clics / 7 conversiones en 27d	Hecho	Modificador Rest of Search	0%	+40%	No evaluable hasta 17-ago (guard +7d)	RoS rinde ROAS 10,39 vs ToS 7,04	interno
+10-ago	NL | Serene135 | SP-KW | EXACT | colchones 135x190	Ajuste de emplazamiento	—	302 clics / 7 conversiones en 27d	Hecho	Modificador Rest of Search	0%	+40%	No evaluable hasta 17-ago (guard +7d)	Palanca RoS	interno
+10-ago	SP_auto_150x190 23fd16	Ajuste de emplazamiento	—	336 clics / 9 conversiones en 27d	Hecho	Modificador Rest of Search	0%	+25%	No evaluable hasta 17-ago (guard +7d)	Foco puro Serene, ROAS 8,62	interno
+10-ago	AUTO-MUELLES-300126	Ajuste de emplazamiento	—	2314 clics / 64 conversiones en 27d	Hecho	Modificador Rest of Search	0%	+40%	No evaluable hasta 17-ago (guard +7d)	Palanca mayor, 56% del gasto	interno
+10-ago	SP-AUTOSeg. automática	Contención escalón 1	—	451 clics / 30 conversiones en 27d	Hecho	Modificador Top of Search	+201%	+100%	No evaluable hasta 17-ago (guard +7d)	98% Moon/Orbit, sobre-inversión en excluidas	interno
+10-ago	SP-AUTOBulk	Contención escalón 1	—	359 clics / 21 conversiones en 27d	Hecho	Modificador Top of Search	+101%	+50%	No evaluable hasta 17-ago (guard +7d)	71% Moon, recorte conservador	interno
+10-ago	NL | B0CNVYKZL1 | Serene135 | SD-REMKT | VIEWS-30	Pausar campaña	B0CNVYKZL1	112 clics / 0 ventas en 27d	Hecho	Estado de campaña	enabled	paused	No evaluable hasta 17-ago (guard +7d)	Cruza R12 (3× los 37 clics-por-venta de Serene); listing verificado activo	interno
+10-ago	—	Reorientación de inversión hacia posiciones de mejor retorno	—	Se concentró la inversión en las ubicaciones de búsqueda que mejor retorno vienen dando y se contuvo el gasto en las gamas fuera del plan acordado, sin sumar inversión nueva.	Hecho	—	—	—	Se mide a partir de la próxima semana	—	cliente
+14-ago	—	Reallocation ToS → RoS	—	4 campañas movidas a RoS +40/+25%. Medir efecto a +7d.	Pendiente	—	—	—	—	Guard vence 17-ago	interno
+14-ago	—	Contención Moon/Orbit · escalón 2	—	AUTOSeg +100%→+50% · AUTOBulk +50%→+25%, si el escalón 1 contuvo sin frenar las permitidas.	Pendiente	—	—	—	—	Depende del veredicto del guard del 17-ago	interno
+14-ago	—	AMC (Amazon Marketing Cloud)	—	Pedido de Roger en la meet: segmentación de audiencias. Instancia sin confirmar.	Pendiente	—	—	—	—	Resolvería el fallo del remarketing genérico	interno
+14-ago	—	5 keywords de test	—	NO LANZADAS. De 26 clusters solo 3 quedaron limpios y son débiles (SV 843-2.419).	Pendiente	—	—	—	—	Diferido hasta refrescar el banco contra el bulk	interno
+14-ago	—	BLOCKER · margen real	—	Flete FBM no cargado por SKU. COGS de Roger da BE bruto 50-57% vs 11,7% operativo declarado.	Pendiente	—	—	—	—	Bloquea comprar rank en heads con CVR probado	interno
+14-ago	—	Hallazgo de ficha · B0CNVYVG9C	—	Serene 090x190 convierte 0,51% con Buy Box 94,5% y 197 sesiones.	Pendiente	—	—	—	—	Problema de ficha, no de PPC. Revisar con Roger	interno

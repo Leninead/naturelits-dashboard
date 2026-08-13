@@ -1,0 +1,10 @@
+Campaña	Campaign ID	Tipo	Estado	Budget/día (€)	Familia	Modelo/Tamaño	ASIN	SKU	Ventas 6-12ago	Notas	ROAS	ACoS	Inversión 6-12ago	Clicks	CPC	Órdenes	Nuevo
+SP_auto_150x190	517890718573683	AUTO	enabled	15.0	Serene	150x190	—	—	0,00	Limpia, todo gama principal	0,00		10,69	25	0,43	0	No
+SP-AUTOSeg	363796544467877	AUTO	enabled	10.0	Gama económica	mixto	—	—	1237,11	Captura automática de demanda · no es foco de inversión	17,80	0,056	69,51	241	0,29	17	No
+SP-AUTOBulk	508219125064287	AUTO	enabled	10.0	Gama económica	mixto	—	—	287,47	Captura automática de gama económica · contenida por presupuesto	4,14	0,241	69,40	124	0,56	3	No
+NL | B0CNVYQXQ9 | Serene180 | SP-KW | EXACT | 180x200	267345332640003	SP	enabled	5.0	Serene	180x200	B0CNVYQXQ9	FBM8435758053268	214,83	—	8,97	0,111	23,95	32	0,75	1	No
+NL | Serene150 | SP-KW | EXACT | colchones muelles ensacados 150x190	61841889253498	SP	enabled	10.0	Serene	150x190	B0CNW4TFG1	FBM8435758053169	0,00	—	0,00		37,18	58	0,64	0	No
+NL | Serene135 | SP-KW | EXACT | colchones 135x190	149263922446123	SP	enabled	10.0	Serene	135x190	B0CNVYKZL1	FBM8435758053145	0,00	—	0,00		0,52	1	0,52	0	No
+AUTO-MUELLES-300126	97977644523317	AUTO	enabled	60.0	Serene	135x190 muelles	B0CNVYKZL1	FBM8435758053145	3828,98	Motor de la cuenta · mayor volumen	9,13	0,109	419,20	591	0,71	21	No
+SB_categorias	562012481782237	SB	enabled	15.0	Mix hogar	—	—	—	534,64	—	5,10	0,196	104,88	212	0,49	3	No
+SD_remktg_135x190	444945720297302	SD	enabled	12.0	Serene	135x190	B0CNVYKZL1	FBM8435758053145	313,96	Atribución diferida · lectura preliminar	3,90	0,257	80,59	383	0,21	2	No
