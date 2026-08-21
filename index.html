@@ -314,7 +314,7 @@ footer b{color:var(--tinta)}
         <!-- Diario: oculto de la vista cliente (va al dash interno); la <section data-tab="diario"> y el tab Bitacora del Sheet quedan intactos -->
         <button class="tab" data-target="health" disabled title="Próximamente">Account Health</button>
         <button class="tab" data-target="glosario">Glosario</button>
-        <button class="tab" data-target="primeday">Prime Day</button>
+        <!-- Prime Day: retirado del nav a pedido de Roger (21-ago). La <section data-tab="primeday"> queda inaccesible; prime-day.html sigue en el repo. -->
       </div>
     </div>
   </nav>
@@ -436,10 +436,13 @@ footer b{color:var(--tinta)}
     <div class="glos" id="glosario"></div>
   </section>
 
+  <!-- Prime Day: panel retirado del nav (21-ago, pedido de Roger). Sin botón que lo active queda inaccesible.
+       Para reactivarlo: restaurar el <button data-target="primeday"> en el nav y descomentar esta sección.
   <section class="panel" data-tab="primeday">
     <iframe src="prime-day.html" style="width:100%;border:0;min-height:1400px;display:block"
             onload="try{this.style.height=(this.contentWindow.document.documentElement.scrollHeight+24)+'px'}catch(e){}"></iframe>
   </section>
+  -->
 
   <footer>
     <div>Fuente: Business Report + Bulk Export · <b>Naturelits ES</b></div>
@@ -793,6 +796,19 @@ function evoTableHTML(){
   return `<div style="overflow-x:auto"><table class="wt"><thead><tr><th>Métrica</th><th>${h1}</th><th>${h2}</th><th>${h3}</th><th>Δ YoY</th><th>Δ WoW</th></tr></thead><tbody>${rows}</tbody></table></div>
     <div class="pricefoot">${nota}</div>`;
 }
+/* Fecha corta es-ES para el Veredicto: "2026-08-20" → "20-ago".
+   Si ya viene como texto corto ("14-ago", como el histórico), se devuelve tal cual. */
+function fechaCortaES(v){
+  const s=String(v==null?"":v).trim();
+  if(!s) return "";
+  let m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);                      // ISO: 2026-08-20
+  if(!m){ const g=s.match(/^Date\((\d+),(\d+),(\d+)\)/);          // gviz crudo: Date(2026,7,20)
+          if(g) m=[null, g[1], String(+g[2]+1), g[3]]; }
+  if(!m) return s;                                                // "14-ago" u otro texto: intacto
+  const d=new Date(+m[1], +m[2]-1, +m[3]);
+  if(isNaN(d.getTime())) return s;
+  return `${d.getDate()}-${MESORD[d.getMonth()]}`;
+}
 /* ── Veredicto (hero del Resumen) ── */
 function renderVeredicto(rows){
   const el=document.getElementById("veredicto");
@@ -806,7 +822,7 @@ function renderVeredicto(rows){
     ["🎯","La palanca", r.Palanca],
     ["🔜","Qué viene", r.Bloquea]
   ];
-  el.innerHTML=`${r.Fecha?`<div class="vfecha">Veredicto · ${r.Fecha}</div>`:""}
+  el.innerHTML=`${r.Fecha?`<div class="vfecha">Veredicto · ${fechaCortaES(r.Fecha)}</div>`:""}
     <div class="vtit">${r.Titulo||r.Título||""}</div>
     <div class="vgrid">${blocks.map(([ic,lb,tx])=>`<div class="vblock"><span class="vico">${ic}</span><div><div class="vlabel">${lb}</div><div class="vtext">${(tx==null||String(tx).trim()==="")?"—":tx}</div></div></div>`).join("")}</div>`;
 }
@@ -826,7 +842,7 @@ function eurDelta(n){
   if(r===0) return {txt:"€0", cls:"d-flat"};
   return {txt:(r>0?"+":"-")+"€"+Math.abs(r).toLocaleString("es-ES"), cls:r>0?"d-up":"d-down"};
 }
-function renderFamVentanas(rows){
+function renderFamVentanas(rows, wow){
   const el=document.getElementById("famVentanas");
   if(!el) return;
   rows=cleanRows(rows);
@@ -852,9 +868,19 @@ function renderFamVentanas(rows){
   const _tot=rows.find(r=>/^total/i.test((r.Familia||"").trim()))||{};
   const _tPrev=numES(_tot[vPrev]), _tCur=numES(_tot[vCur]);
   const _mil=n=>n==null?"—":Math.round(n).toLocaleString("es-ES");
-  const _pct=_tPrev?Math.round((_tCur-_tPrev)/_tPrev*100):0;
-  const enCurso=_tCur<_tPrev;
-  const banner=`La facturación total ${_tCur>=_tPrev?'subió a':'quedó en'} <b>${_mil(_tCur)} €</b> (${_pct>=0?'+':''}${_pct}% vs. la ventana anterior${enCurso?'; ventana en curso, atribución abierta':''}). El foco de trabajo sigue en <b>Serene</b> (~60% del catálogo): concentra el tráfico y la inversión, y la conversión de su ficha es la palanca que define el resultado.`;
+  /* La variación se calcula sobre la MISMA base que el resto del dashboard: WoW_KPIs.Ventas_Totales.
+     El TOTAL de Modelos_Ventanas difiere en la ventana previa (26.573 vs 25.971) y daba -37% donde
+     Resumen/Comparativa dicen -36%. Si no hay WoW disponible, cae al total de Modelos. */
+  const _w=cleanRows(wow||[]);
+  const _bCur =_w.length>=1?toN0(_w[_w.length-1].Ventas_Totales):null;
+  const _bPrev=_w.length>=2?toN0(_w[_w.length-2].Ventas_Totales):null;
+  const _cur =(_bCur!=null&&_bCur!==0)?_bCur:_tCur;
+  const _prev=(_bPrev!=null&&_bPrev!==0)?_bPrev:_tPrev;
+  const _pct=_prev?Math.round((_cur-_prev)/_prev*100):0;
+  /* Retirada la coletilla de ventana sin cerrar (21-ago): la heurística asumía que toda caída era
+     artefacto de atribución, y contradecía el Veredicto (la caída de 13-19 es real, por plazo de
+     entrega). La preliminaridad ya la comunica el header ("actualización parcial"). */
+  const banner=`La facturación total ${_cur>=_prev?'subió a':'quedó en'} <b>${_mil(_cur)} €</b> (${_pct>=0?'+':''}${_pct}% vs. la ventana anterior). El foco de trabajo sigue en <b>Serene</b> (~60% del catálogo): concentra el tráfico y la inversión, y la conversión de su ficha es la palanca que define el resultado.`;
   const invPrevTot=iPrev?numES(_tot[iPrev]):null, invCurTot=iCur?numES(_tot[iCur]):null;
   el.innerHTML=`
     <div class="famv-tit">Por familia · últimos 7 días vs. previos</div>
@@ -1182,7 +1208,7 @@ async function boot(){
   // renderSerene(d.serene);   // oculto junto con "Por modelo"; contenedor #serSec display:none — reactivar quitando ambos
   renderBizKPIs(d.wow);
   renderComparativa(d.wow);
-  renderFamVentanas(d.ventanas);
+  renderFamVentanas(d.ventanas, d.wow);
   // renderFam(d.familias); // tabla por familia: placeholder viejo (€13.316 no coincide con cards reales); reactivar con dato real por familia
   document.getElementById("fam").innerHTML = emptyState("Próximamente · se carga con el Business Report by child");
   renderCamp(d.campanasView);
