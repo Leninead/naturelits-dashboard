@@ -278,6 +278,50 @@ footer b{color:var(--tinta)}
 .wt tr.famv-total td{font-weight:700; color:var(--negro); border-top:2px solid var(--negro)}
 .wt tr.famv-serene td{background:var(--ambar-bg)}
 .wt td.famv-lectura{text-align:left; font-family:inherit; font-weight:400; color:var(--gris); font-size:.82rem; white-space:normal; max-width:300px}
+
+/* ── Embudo · pirámide invertida (tab "Embudo", hoja Funnel) ── */
+.emb-wrap{max-width:760px; margin:0 auto}
+.emb-lv{margin:0 auto; border-radius:10px; padding:16px 22px; color:#fff;
+        display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap}
+.emb-lv1{width:100%;  background:var(--naranja-2)}
+.emb-lv2{width:62%;   background:var(--naranja)}
+.emb-lv3{width:34%;   background:#1d5a48}
+.emb-gap{height:2px}
+.emb-lab{font-size:.9rem; font-weight:600; letter-spacing:.01em; display:flex; align-items:center; gap:8px}
+.emb-nums{text-align:right; line-height:1.25}
+.emb-big{font-family:'IBM Plex Mono',monospace; font-variant-numeric:tabular-nums; font-size:1.5rem; font-weight:600}
+.emb-prev{font-size:.72rem; opacity:.85}
+.emb-d{font-weight:700}
+/* Δ sobre las barras (fondo oscuro): se usan los tokens claros existentes para que el
+   contraste funcione sin introducir colores nuevos a la paleta. */
+.emb-d-up{color:var(--verde-bg)} .emb-d-down{color:var(--rojo-bg)} .emb-d-flat{opacity:.8}
+/* tasa de paso entre niveles */
+.emb-step{margin:10px auto; padding:10px 16px; max-width:520px; text-align:center;
+          border:1px dashed var(--linea); border-radius:10px; background:var(--papel); font-size:.86rem; color:var(--tinta)}
+.emb-step b{color:var(--negro)}
+.emb-step .emb-antes{display:block; font-size:.76rem; color:var(--gris); margin-top:3px}
+.emb-step-alert{border:1px solid var(--ambar); border-left:4px solid var(--ambar); background:var(--ambar-bg)}
+.emb-step-alert .emb-tag{display:block; font-size:.63rem; font-weight:700; letter-spacing:.1em;
+                         text-transform:uppercase; color:var(--ambar); margin-bottom:4px}
+/* veredicto del embudo */
+.emb-ver{margin:22px 0 18px; background:var(--papel); border:1px solid var(--naranja-bd);
+         border-left:5px solid var(--naranja); border-radius:14px; padding:18px 22px;
+         font-size:.95rem; line-height:1.6; color:var(--tinta)}
+/* callouts */
+.emb-calls{display:grid; grid-template-columns:repeat(2,1fr); gap:16px}
+.emb-call{background:var(--papel); border:1px solid var(--linea); border-radius:12px; padding:16px 18px}
+.emb-call-tit{font-size:.8rem; font-weight:700; color:var(--negro); margin-bottom:8px; display:flex; align-items:center; gap:7px}
+.emb-call-num{font-family:'IBM Plex Mono',monospace; font-variant-numeric:tabular-nums;
+              font-size:1.6rem; font-weight:600; color:var(--negro); display:flex; align-items:baseline; gap:10px}
+.emb-call-d{font-size:.85rem; font-weight:700}
+.emb-call-txt{font-size:.83rem; color:var(--gris); line-height:1.5; margin-top:8px}
+.d-alert{color:var(--ambar)}
+@media(max-width:720px){
+  .emb-lv{padding:13px 16px}
+  .emb-lv2{width:78%} .emb-lv3{width:56%}
+  .emb-big{font-size:1.25rem}
+  .emb-calls{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
@@ -302,6 +346,7 @@ footer b{color:var(--tinta)}
         <button class="tab" data-target="resultados">Resultados</button>
         <button class="tab" data-target="comparativa">Comparativa</button>
         <button class="tab" data-target="funnel" style="display:none">Funnel</button>
+        <button class="tab" data-target="embudo">Embudo</button>
         <button class="tab" data-target="campanas">Campañas</button>
         <button class="tab" data-target="acciones">Acciones</button>
       </div>
@@ -350,6 +395,14 @@ footer b{color:var(--tinta)}
     </div>
     <div id="wowtable"></div>
     <div id="famVentanas" class="famv"></div>
+  </section>
+
+  <section class="panel" data-tab="embudo">
+    <div class="shead">
+      <h2>Embudo · el recorrido de compra</h2>
+      <div class="snote">De cuánta gente nos ve a cuánta compra · semana 13-19 vs 6-12 ago</div>
+    </div>
+    <div id="embudo"></div>
   </section>
 
   <section id="s-fam" class="panel" data-tab="negocio">
@@ -842,6 +895,92 @@ function eurDelta(n){
   if(r===0) return {txt:"€0", cls:"d-flat"};
   return {txt:(r>0?"+":"-")+"€"+Math.abs(r).toLocaleString("es-ES"), cls:r>0?"d-up":"d-down"};
 }
+/* ── Embudo · pirámide invertida (hoja "Funnel": Etapa | Tipo | Valor_6-12 | Valor_13-19) ──
+   Modo B: sin siglas. Las tasas van en lenguaje natural ("X de cada 1.000"). */
+const _embMil = n => n==null ? "—" : Math.round(n).toLocaleString("es-ES");
+/* Δ% con flecha + color + número (nunca color solo). alerta=true → subir es malo. */
+function embDelta(cur, prev, alerta){
+  if(cur==null||prev==null||!prev) return {txt:"—", cls:"emb-d-flat"};
+  const p=(cur-prev)/prev*100;
+  const flecha = p>0 ? "▲" : (p<0 ? "▼" : "—");
+  const txt = `${flecha} ${p>0?"+":""}${p.toLocaleString("es-ES",{minimumFractionDigits:1,maximumFractionDigits:1})}%`;
+  if(alerta) return {txt, cls:"d-alert"};
+  return {txt, cls: p>0 ? "emb-d-up" : (p<0 ? "emb-d-down" : "emb-d-flat")};
+}
+/* "X de cada 1.000" a partir de una proporción (0-1).
+   Bajo 10 se muestra con 1 decimal: redondear a entero haría que 4,6 y 5,0 se vieran
+   ambos como "5" y la mejora del primer paso pareceria nula. Desde 10, entero. */
+function _porMil(r){
+  if(r==null) return "—";
+  const v=r*1000;
+  return v<10 ? v.toLocaleString("es-ES",{minimumFractionDigits:1,maximumFractionDigits:1})
+              : Math.round(v).toLocaleString("es-ES");
+}
+function renderEmbudo(rows){
+  const el=document.getElementById("embudo");
+  if(!el) return;
+  rows=cleanRows(rows);
+  if(!rows.length){ el.innerHTML=emptyState("Embudo — se carga con la hoja Funnel del Sheet"); return; }
+  const get=nombre=>rows.find(r=>(r.Etapa||"").trim().toLowerCase()===nombre);
+  const v=(r,k)=>r?numES(r[k]):null;
+  const ver=get("impresiones"), ent=get("clicks"), com=get("compras");
+  if(!ver||!ent||!com){ el.innerHTML=emptyState("Embudo — faltan etapas en la hoja Funnel"); return; }
+  const A="Valor_13-19", P="Valor_6-12";
+  const niveles=[
+    {cls:"emb-lv1", ico:"👁️", lab:"Nos ven",  cur:v(ver,A), prev:v(ver,P)},
+    {cls:"emb-lv2", ico:"🖱️", lab:"Entran",   cur:v(ent,A), prev:v(ent,P)},
+    {cls:"emb-lv3", ico:"🛒", lab:"Compran",  cur:v(com,A), prev:v(com,P)}
+  ];
+  const barra=n=>{
+    const d=embDelta(n.cur,n.prev,false);
+    return `<div class="emb-lv ${n.cls}">
+      <div class="emb-lab"><span>${n.ico}</span>${n.lab}</div>
+      <div class="emb-nums">
+        <div class="emb-big">${_embMil(n.cur)}</div>
+        <div class="emb-prev">antes ${_embMil(n.prev)} · <span class="emb-d ${d.cls}">${d.txt}</span></div>
+      </div></div>`;
+  };
+  /* tasa de paso entre dos niveles */
+  const paso=(a,b,alerta)=>{
+    const rc=(a.cur&&b.cur!=null)?b.cur/a.cur:null;
+    const rp=(a.prev&&b.prev!=null)?b.prev/a.prev:null;
+    const dd=(rc!=null&&rp!=null&&rp)?((rc-rp)/rp*100):null;
+    const flecha=dd==null?"":(dd>0?"▲":"▼");
+    const cambio=dd==null?"":` <span class="emb-d ${dd>0?"emb-d-up":"emb-d-down"}" style="color:${dd>0?"var(--verde)":"var(--rojo)"}">${flecha} ${dd>0?"+":""}${dd.toLocaleString("es-ES",{maximumFractionDigits:0})}%</span>`;
+    const sufijo=alerta?" que entran":"";
+    return `<div class="emb-step${alerta?" emb-step-alert":""}">
+      ${alerta?`<span class="emb-tag">Aquí está el cuello</span>`:""}
+      <b>${a.lab} → ${b.lab}:</b> ${_porMil(rc)} de cada 1.000${sufijo}${cambio}
+      <span class="emb-antes">antes ${_porMil(rp)} de cada 1.000</span>
+    </div>`;
+  };
+  const veredicto="Entró más gente que la semana anterior, pero compró un tercio menos: el embudo se estrangula en el último paso —el cierre de compra— que es justo donde pega el plazo de entrega.";
+  const calls=[
+    {ico:"🛒❌", tit:"Carrito abandonado", key:"carrito abandonado", alerta:true,
+     txt:"Personas que pusieron el producto en el carrito y no compraron (últimos 90 días). Interés que no cierra —coherente con el plazo de entrega."},
+    {ico:"📄", tit:"Vistas de ficha", key:"vistas de ficha", alerta:false,
+     txt:"Las visitas a la ficha bajaron casi lo mismo que el tráfico (−7%). El interés se mantuvo; lo que cayó fue el cierre."}
+  ];
+  const callHTML=calls.map(c=>{
+    const r=get(c.key);
+    if(!r) return "";
+    const cur=v(r,A), prev=v(r,P), d=embDelta(cur,prev,c.alerta);
+    return `<div class="emb-call">
+      <div class="emb-call-tit"><span>${c.ico}</span>${c.tit}</div>
+      <div class="emb-call-num">${_embMil(cur)} <span class="emb-call-d ${d.cls}">${d.txt}</span></div>
+      <div class="emb-call-txt">${c.txt}</div></div>`;
+  }).join("");
+  el.innerHTML=`<div class="emb-wrap">
+      ${barra(niveles[0])}<div class="emb-gap"></div>
+      ${paso(niveles[0],niveles[1],false)}
+      ${barra(niveles[1])}<div class="emb-gap"></div>
+      ${paso(niveles[1],niveles[2],true)}
+      ${barra(niveles[2])}
+    </div>
+    <div class="emb-ver">${veredicto}</div>
+    ${callHTML?`<div class="emb-calls">${callHTML}</div>`:""}
+    <div class="pricefoot">Embudo del recorrido publicitario · semana 13-19 vs 6-12 ago. El carrito abandonado es de los últimos 90 días (Brand Analytics).</div>`;
+}
 function renderFamVentanas(rows, wow){
   const el=document.getElementById("famVentanas");
   if(!el) return;
@@ -1176,13 +1315,15 @@ function renderModelos(rows){
 async function boot(){
   let d = {...DATA};
   d.bitacora=[]; d.funnel=[]; d.precios=[]; d.modelos=[]; d.campanasView=DATA.campanas;
-  d.veredicto=[]; d.mom=[]; d.yoy=[]; d.ventanas=[];
+  d.veredicto=[]; d.mom=[]; d.yoy=[]; d.ventanas=[]; d.embudo=[];
   let mode="snapshot";
   if(SHEET_ID){
-    const names=["WoW_KPIs","Campanas_ASINs","Acciones_PPC","Bitacora","Funnel_Etapas","Precios_Impacto","Modelos_WoW","Veredicto","MoM_KPIs","YoY_Negocio","Modelos_Ventanas"];
+    const names=["WoW_KPIs","Campanas_ASINs","Acciones_PPC","Bitacora","Funnel_Etapas","Precios_Impacto","Modelos_WoW","Veredicto","MoM_KPIs","YoY_Negocio","Modelos_Ventanas","Funnel"];
     const res=await Promise.allSettled(names.map(n=>fetchSheet(n)));
     const val=i=>res[i].status==="fulfilled"?res[i].value:null;
-    const wow=val(0),camp=val(1),acc=val(2),bita=val(3),fun=val(4),pre=val(5),mod=val(6),ver=val(7),momS=val(8),yoyS=val(9),venS=val(10);
+    /* OJO: "Funnel_Etapas" (índice 4) es la hoja vieja del tab Funnel oculto;
+       "Funnel" (índice 11) es la del tab Embudo. Son hojas distintas. */
+    const wow=val(0),camp=val(1),acc=val(2),bita=val(3),fun=val(4),pre=val(5),mod=val(6),ver=val(7),momS=val(8),yoyS=val(9),venS=val(10),embS=val(11);
     let ok=0; const total=names.length;
     if(wow&&wow.length){ d.wow=wow; ok++; }
     if(camp&&camp.length){ d.campanasView=mapCampanas(camp); ok++; }
@@ -1195,6 +1336,7 @@ async function boot(){
     if(momS&&momS.length){ d.mom=cleanRows(momS); ok++; }
     if(yoyS&&yoyS.length){ d.yoy=cleanRows(yoyS); ok++; }
     if(venS&&venS.length){ d.ventanas=cleanRows(venS); ok++; }
+    if(embS&&embS.length){ d.embudo=cleanRows(embS); ok++; }
     mode = ok===0 ? "snapshot" : ok===total ? "live" : "parcial";
     if(res.some(r=>r.status==="rejected")) console.warn("Pestañas no cargadas:", res.map((r,i)=>r.status==="rejected"?names[i]:null).filter(Boolean).join(", "));
   }
@@ -1209,6 +1351,7 @@ async function boot(){
   renderBizKPIs(d.wow);
   renderComparativa(d.wow);
   renderFamVentanas(d.ventanas, d.wow);
+  renderEmbudo(d.embudo);
   // renderFam(d.familias); // tabla por familia: placeholder viejo (€13.316 no coincide con cards reales); reactivar con dato real por familia
   document.getElementById("fam").innerHTML = emptyState("Próximamente · se carga con el Business Report by child");
   renderCamp(d.campanasView);
