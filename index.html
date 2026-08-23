@@ -281,6 +281,9 @@ footer b{color:var(--tinta)}
 
 /* ── Embudo · pirámide invertida (tab "Embudo", hoja Funnel) ── */
 .emb-wrap{max-width:760px; margin:0 auto}
+/* guia de lectura de la piramide: texto tenue, sin recuadro (no compite con el veredicto) */
+.emb-guia{max-width:760px; margin:0 auto 16px; font-size:.82rem; line-height:1.5;
+          color:var(--gris); text-align:center}
 .emb-lv{margin:0 auto; border-radius:10px; padding:16px 22px; color:#fff;
         display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap}
 .emb-lv1{width:100%;  background:var(--naranja-2)}
@@ -970,7 +973,9 @@ function renderEmbudo(rows){
       <div class="emb-call-num">${_embMil(cur)} <span class="emb-call-d ${d.cls}">${d.txt}</span></div>
       <div class="emb-call-txt">${c.txt}</div></div>`;
   }).join("");
-  el.innerHTML=`<div class="emb-wrap">
+  const guia="Se lee de arriba (los que nos ven) hacia abajo (los que compran). Cada nivel más angosto = menos gente llega; el salto más grande marca dónde se pierde la venta.";
+  el.innerHTML=`<div class="emb-guia">${guia}</div>
+    <div class="emb-wrap">
       ${barra(niveles[0])}<div class="emb-gap"></div>
       ${paso(niveles[0],niveles[1],false)}
       ${barra(niveles[1])}<div class="emb-gap"></div>
