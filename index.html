@@ -403,7 +403,9 @@ footer b{color:var(--tinta)}
   <section class="panel" data-tab="embudo">
     <div class="shead">
       <h2>Embudo · el recorrido de compra</h2>
-      <div class="snote">De cuánta gente nos ve a cuánta compra · semana 13-19 vs 6-12 ago</div>
+      <!-- la ventana la completa renderEmbudo desde los nombres de columna del Sheet; sin
+           dato queda el texto neutro, nunca una semana hardcodeada que quede vieja -->
+      <div class="snote">De cuánta gente nos ve a cuánta compra</div>
     </div>
     <div id="embudo"></div>
   </section>
@@ -898,8 +900,14 @@ function eurDelta(n){
   if(r===0) return {txt:"€0", cls:"d-flat"};
   return {txt:(r>0?"+":"-")+"€"+Math.abs(r).toLocaleString("es-ES"), cls:r>0?"d-up":"d-down"};
 }
-/* ── Embudo · pirámide invertida (hoja "Funnel": Etapa | Tipo | Valor_6-12 | Valor_13-19) ──
-   Modo B: sin siglas. Las tasas van en lenguaje natural ("X de cada 1.000"). */
+/* ── Embudo · pirámide invertida (hoja "Funnel": Etapa | Tipo | Valor_<previa> | Valor_<actual>) ──
+   Modo B: sin siglas. Las tasas van en lenguaje natural ("X de cada 1.000").
+   Las dos columnas de ventana se AUTODETECTAN por `^Valor_` (mismo criterio que
+   famWinCols para Ventas_/Inv_SP_): la 1ª es la previa, la 2ª la actual. Antes estaban
+   hardcodeadas en "Valor_6-12"/"Valor_13-19", así que el cuadro quedó clavado dos
+   semanas atrás mostrando datos viejos bajo una etiqueta fija. */
+const embWinCols = rows => Object.keys(rows[0]||{}).filter(k=>/^Valor_/i.test(k));
+const prettyWinEmb = k => k.replace(/^Valor_/i,"").replace(/(\d)([a-zA-Z]{3})/g,"$1 $2");
 const _embMil = n => n==null ? "—" : Math.round(n).toLocaleString("es-ES");
 /* Δ% con flecha + color + número (nunca color solo). alerta=true → subir es malo. */
 function embDelta(cur, prev, alerta){
@@ -928,7 +936,13 @@ function renderEmbudo(rows){
   const v=(r,k)=>r?numES(r[k]):null;
   const ver=get("impresiones"), ent=get("clicks"), com=get("compras");
   if(!ver||!ent||!com){ el.innerHTML=emptyState("Embudo — faltan etapas en la hoja Funnel"); return; }
-  const A="Valor_13-19", P="Valor_6-12";
+  const _cols=embWinCols(rows);
+  if(_cols.length<2){ el.innerHTML=emptyState("Embudo — faltan las dos columnas de ventana en la hoja Funnel"); return; }
+  const P=_cols[0], A=_cols[1];
+  const _winP=prettyWinEmb(P), _winA=prettyWinEmb(A);
+  const _ventanas=`semana ${_winA} vs ${_winP}`;
+  const _sn=document.querySelector('[data-tab="embudo"] .snote');
+  if(_sn) _sn.textContent=`De cuánta gente nos ve a cuánta compra · ${_ventanas}`;
   const niveles=[
     {cls:"emb-lv1", ico:"👁️", lab:"Nos ven",  cur:v(ver,A), prev:v(ver,P)},
     {cls:"emb-lv2", ico:"🖱️", lab:"Entran",   cur:v(ent,A), prev:v(ent,P)},
@@ -957,21 +971,27 @@ function renderEmbudo(rows){
       <span class="emb-antes">antes ${_porMil(rp)} de cada 1.000</span>
     </div>`;
   };
-  const veredicto="Entró más gente que la semana anterior, pero compró un tercio menos: el embudo se estrangula en el último paso —el cierre de compra— que es justo donde pega el plazo de entrega.";
+  /* El veredicto y los textos de los callouts estaban hardcodeados con el relato de la
+     semana 13-19 ("compró un tercio menos", "−7% de tráfico") y seguían mostrándose sobre
+     los números de cualquier semana posterior. La hoja Funnel no tiene columna de texto de
+     donde leerlos, así que se dejan en blanco: mejor vacío que contradiciendo la cifra de
+     al lado. Prosa dinámica = rediseño posterior, con spec del cliente. */
   const calls=[
-    {ico:"🛒❌", tit:"Carrito abandonado", key:"carrito abandonado", alerta:true,
-     txt:"Personas que pusieron el producto en el carrito y no compraron (últimos 90 días). Interés que no cierra —coherente con el plazo de entrega."},
-    {ico:"📄", tit:"Vistas de ficha", key:"vistas de ficha", alerta:false,
-     txt:"Las visitas a la ficha bajaron casi lo mismo que el tráfico (−7%). El interés se mantuvo; lo que cayó fue el cierre."}
+    {ico:"🛒❌", tit:"Carrito abandonado", key:"carrito abandonado", alerta:true},
+    {ico:"📄", tit:"Vistas de ficha", key:"vistas de ficha", alerta:false}
   ];
   const callHTML=calls.map(c=>{
     const r=get(c.key);
     if(!r) return "";
-    const cur=v(r,A), prev=v(r,P), d=embDelta(cur,prev,c.alerta);
+    const cur=v(r,A), prev=v(r,P);
+    if(cur==null) return "";   // el callout ES el número actual: sin él la tarjeta no aporta
+                               // nada (quedaría "—" y un Δ vacío). Tener sólo el valor previo
+                               // no alcanza. Pendiente de fuente ⇒ celda vacía ⇒ no se dibuja.
+    const d=embDelta(cur,prev,c.alerta);
     return `<div class="emb-call">
       <div class="emb-call-tit"><span>${c.ico}</span>${c.tit}</div>
       <div class="emb-call-num">${_embMil(cur)} <span class="emb-call-d ${d.cls}">${d.txt}</span></div>
-      <div class="emb-call-txt">${c.txt}</div></div>`;
+      </div>`;
   }).join("");
   const guia="Se lee de arriba (los que nos ven) hacia abajo (los que compran). Cada nivel más angosto = menos gente llega; el salto más grande marca dónde se pierde la venta.";
   el.innerHTML=`<div class="emb-guia">${guia}</div>
@@ -982,9 +1002,8 @@ function renderEmbudo(rows){
       ${paso(niveles[1],niveles[2],true)}
       ${barra(niveles[2])}
     </div>
-    <div class="emb-ver">${veredicto}</div>
     ${callHTML?`<div class="emb-calls">${callHTML}</div>`:""}
-    <div class="pricefoot">Embudo del recorrido publicitario · semana 13-19 vs 6-12 ago. El carrito abandonado es de los últimos 90 días (Brand Analytics).</div>`;
+    <div class="pricefoot">Embudo del recorrido publicitario · ${_ventanas}.${callHTML?" El carrito abandonado es de los últimos 90 días (Brand Analytics).":""}</div>`;
 }
 function renderFamVentanas(rows, wow){
   const el=document.getElementById("famVentanas");
@@ -1323,12 +1342,15 @@ async function boot(){
   d.veredicto=[]; d.mom=[]; d.yoy=[]; d.ventanas=[]; d.embudo=[];
   let mode="snapshot";
   if(SHEET_ID){
-    const names=["WoW_KPIs","Campanas_ASINs","Acciones_PPC","Bitacora","Funnel_Etapas","Precios_Impacto","Modelos_WoW","Veredicto","MoM_KPIs","YoY_Negocio","Modelos_Ventanas","Funnel"];
+    const names=["WoW_KPIs","Campanas_ASINs","Acciones_PPC","Bitacora","Funnel_Etapas","Precios_Impacto","Veredicto","MoM_KPIs","YoY_Negocio","Modelos_Ventanas","Funnel"];
     const res=await Promise.allSettled(names.map(n=>fetchSheet(n)));
     const val=i=>res[i].status==="fulfilled"?res[i].value:null;
     /* OJO: "Funnel_Etapas" (índice 4) es la hoja vieja del tab Funnel oculto;
-       "Funnel" (índice 11) es la del tab Embudo. Son hojas distintas. */
-    const wow=val(0),camp=val(1),acc=val(2),bita=val(3),fun=val(4),pre=val(5),mod=val(6),ver=val(7),momS=val(8),yoyS=val(9),venS=val(10),embS=val(11);
+       "Funnel" (índice 10) es la del tab Embudo. Son hojas distintas.
+       val(i) es POSICIONAL: sacar o agregar un nombre obliga a renumerar TODO lo que sigue.
+       "Modelos_WoW" se retiró (27-ago): su render está comentado, así que solo gastaba un
+       fetch y dejaba el badge en "parcial" para siempre al contar en el total. */
+    const wow=val(0),camp=val(1),acc=val(2),bita=val(3),fun=val(4),pre=val(5),ver=val(6),momS=val(7),yoyS=val(8),venS=val(9),embS=val(10);
     let ok=0; const total=names.length;
     if(wow&&wow.length){ d.wow=wow; ok++; }
     if(camp&&camp.length){ d.campanasView=mapCampanas(camp); ok++; }
@@ -1336,7 +1358,6 @@ async function boot(){
     if(bita&&bita.length){ d.bitacora=bita; ok++; }
     if(fun&&fun.length){ d.funnel=fun; ok++; }
     if(pre&&pre.length){ d.precios=pre; ok++; }
-    if(mod&&mod.length){ d.modelos=mod; ok++; }
     if(ver&&ver.length){ d.veredicto=cleanRows(ver); ok++; }
     if(momS&&momS.length){ d.mom=cleanRows(momS); ok++; }
     if(yoyS&&yoyS.length){ d.yoy=cleanRows(yoyS); ok++; }
@@ -1351,7 +1372,9 @@ async function boot(){
   renderVeredicto(d.veredicto);
   renderRecos(d.wow);
   renderKPIs(d.wow);
-  // renderModelos(d.modelos); // oculto hasta tener data por modelo (Roger); contenedor #modelos display:none — reactivar quitando ambos
+  // renderModelos(d.modelos); // oculto hasta tener data por modelo (Roger); contenedor #modelos display:none
+  // — para reactivar hay que hacer TRES cosas: descomentar esta línea, quitar el display:none
+  //   del contenedor, y volver a agregar "Modelos_WoW" al array names de arriba (se retiró el 27-ago).
   // renderSerene(d.serene);   // oculto junto con "Por modelo"; contenedor #serSec display:none — reactivar quitando ambos
   renderBizKPIs(d.wow);
   renderComparativa(d.wow);
