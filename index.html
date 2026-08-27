@@ -319,6 +319,11 @@ footer b{color:var(--tinta)}
 .emb-call-d{font-size:.85rem; font-weight:700}
 .emb-call-txt{font-size:.83rem; color:var(--gris); line-height:1.5; margin-top:8px}
 .d-alert{color:var(--ambar)}
+/* Entrega · plazo de entrega */
+.dp-banner{background:var(--naranja-pal); border:1px solid var(--naranja-bd); border-radius:12px;
+           padding:14px 18px; font-size:.88rem; line-height:1.55; color:var(--tinta); margin-bottom:18px}
+.dp-top{font-weight:500; color:var(--gris); font-size:.8rem}
+#entrega td.dp-c{font-family:'IBM Plex Mono',monospace; font-variant-numeric:tabular-nums; white-space:nowrap}
 /* Callout pendiente de fuente: estado intencional "en curso", NO error ni dato faltante.
    Tinte de marca (verde palido) en vez de ambar/rojo, para que no lea como alerta. */
 .emb-call-pend{background:var(--naranja-pal); border-color:var(--naranja-bd)}
@@ -367,6 +372,7 @@ footer b{color:var(--tinta)}
       <div class="naveyebrow">Negocio y cuenta</div>
       <div class="navgrp-tabs">
         <button class="tab" data-target="negocio">Negocio</button>
+        <button class="tab" data-target="entrega">Entrega</button>
         <button class="tab" data-target="precios" disabled title="Próximamente">Precios</button>
         <!-- Diario: oculto de la vista cliente (va al dash interno); la <section data-tab="diario"> y el tab Bitacora del Sheet quedan intactos -->
         <button class="tab" data-target="health" disabled title="Próximamente">Account Health</button>
@@ -467,6 +473,14 @@ footer b{color:var(--tinta)}
       <div class="pyramid" id="funnelPyr"></div>
       <div class="fntargets" id="funnelTgt"></div>
     </div>
+  </section>
+
+  <section class="panel" data-tab="entrega">
+    <div class="shead">
+      <span class="snum">06</span><h2>Entrega · cuánto tarda en llegar</h2>
+      <div class="snote">Días de entrega por referencia, día a día</div>
+    </div>
+    <div id="entrega"></div>
   </section>
 
   <section class="panel" data-tab="precios">
@@ -1334,6 +1348,50 @@ function renderDiario(rows){
   }).join("");
 }
 /* ── Precios ── */
+/* ── Entrega · plazo de entrega por referencia (hoja "Delivery_Promise") ──────────────
+   Modo B ESTRICTO: la hoja es INTERNA y trae Child_ASIN; acá NUNCA se muestra. Se mapea a
+   nombre de negocio "{Modelo} {Talle}". Nada de siglas: "días de entrega", nunca "DP".
+
+   TABLA, no gráfico de líneas: con pocos días una línea dibuja una tendencia que el dato
+   todavía no sostiene (además los scrapes 25-27ago no tienen hora fija registrada, así que
+   valen como nivel, no como serie). El dashboard muestra los días medidos; no concluye.
+
+   GUARDA DE ESQUEMA: si la pestaña no existe, gviz NO da error — devuelve la PRIMERA hoja
+   del Sheet, que es Campanas_ASINs (con ASINs y nombres de campaña crudos). Sin dpValido()
+   esta tab cliente-facing renderizaría justamente eso. */
+const DP_NOMBRE={"serene hybrid":"Serene"};   // el resto se muestra tal cual
+const DP_COLS=["Fecha","Modelo","Talle","DP_min","DP_max"];
+const dpValido = rows => Array.isArray(rows) && rows.length>0 && DP_COLS.every(k=>k in rows[0]);
+const dpRef = r => {
+  const m=(r.Modelo||"").trim();
+  return `${DP_NOMBRE[m.toLowerCase()]||m} ${(r.Talle||"").trim().replace(/x/i,"×")}`.trim();
+};
+const dpFecha = f => {const m=String(f||"").match(/(\d{4})-(\d{2})-(\d{2})/); return m?`${+m[3]} ${MESORD[+m[2]-1]}`:String(f||"");};
+function renderEntrega(rows){
+  const el=document.getElementById("entrega");
+  if(!el) return;
+  rows=cleanRows(rows);
+  if(!dpValido(rows)){ el.innerHTML=emptyState("Seguimiento en preparación"); return; }
+  const banner=`<div class="dp-banner">Primeros días del seguimiento del plazo de entrega, por las referencias que más venden. Medición preliminar — con pocos días todavía no marcamos tendencia. Desde mañana la medición es diaria a hora fija; en una semana la cruzamos con la conversión.</div>`;
+  const fechas=[...new Set(rows.map(r=>(r.Fecha||"").trim()).filter(Boolean))].sort();   // ISO ⇒ cronológico
+  /* Orden de referencias = orden de aparición en la hoja (se pega por volumen, top primero).
+     Si la hoja gana una columna Units_30d con dato para TODAS, esa manda. */
+  const orden=[], visto={}, uni={};
+  rows.forEach(r=>{ const k=dpRef(r); if(!visto[k]){visto[k]=1; orden.push(k);}
+    const u=numES(r.Units_30d); if(u!=null) uni[k]=u; });
+  if(orden.length && orden.every(k=>uni[k]!=null)) orden.sort((a,b)=>uni[b]-uni[a]);
+  const celda={};
+  rows.forEach(r=>{ const mn=numES(r.DP_min), mx=numES(r.DP_max);
+    celda[dpRef(r)+"|"+(r.Fecha||"").trim()] = (mn!=null&&mx!=null) ? `${mn}-${mx} días` : "—"; });
+  if(!fechas.length || !orden.length){ el.innerHTML=emptyState("Seguimiento en preparación"); return; }
+  el.innerHTML = banner + `<div style="overflow-x:auto"><table class="tbl" id="entrega-t">
+    <thead><tr><th>Referencia</th>${fechas.map(f=>`<th class="num">${dpFecha(f)}</th>`).join("")}</tr></thead>
+    <tbody>${orden.map((k,i)=>`<tr>
+      <td class="cn">${k}${i===0?` <span class="dp-top">· la más vendida</span>`:""}</td>
+      ${fechas.map(f=>`<td class="num dp-c">${celda[k+"|"+f]||"—"}</td>`).join("")}
+    </tr>`).join("")}</tbody></table></div>
+    <div class="pricefoot">Cada celda es el plazo que ve el comprador ese día. Se mide a diario; la lectura junto a la conversión llega con más días acumulados.</div>`;
+}
 function renderPrecios(rows){
   const tb=document.querySelector("#precios tbody");
   rows=cleanRows(rows);
@@ -1417,10 +1475,10 @@ function renderModelos(rows){
 async function boot(){
   let d = {...DATA};
   d.bitacora=[]; d.funnel=[]; d.precios=[]; d.modelos=[]; d.campanasView=DATA.campanas;
-  d.veredicto=[]; d.mom=[]; d.yoy=[]; d.ventanas=[]; d.embudo=[];
+  d.veredicto=[]; d.mom=[]; d.yoy=[]; d.ventanas=[]; d.embudo=[]; d.entrega=[];
   let mode="snapshot";
   if(SHEET_ID){
-    const names=["WoW_KPIs","Acciones_PPC","Bitacora","Funnel_Etapas","Veredicto","MoM_KPIs","YoY_Negocio","Modelos_Ventanas","Funnel"];
+    const names=["WoW_KPIs","Acciones_PPC","Bitacora","Funnel_Etapas","Veredicto","MoM_KPIs","YoY_Negocio","Modelos_Ventanas","Funnel","Delivery_Promise"];
     const res=await Promise.allSettled(names.map(n=>fetchSheet(n)));
     const val=i=>res[i].status==="fulfilled"?res[i].value:null;
     /* OJO: "Funnel_Etapas" (índice 3) es la hoja vieja del tab Funnel oculto;
@@ -1431,7 +1489,7 @@ async function boot(){
          · "Modelos_WoW"     (27-ago)
          · "Precios_Impacto" (27-ago) — pestaña vacía; el tab Precios ya estaba disabled
          · "Campanas_ASINs"  (27-ago) — tab oculta por fuga de ASINs; no se descarga */
-    const wow=val(0),acc=val(1),bita=val(2),fun=val(3),ver=val(4),momS=val(5),yoyS=val(6),venS=val(7),embS=val(8);
+    const wow=val(0),acc=val(1),bita=val(2),fun=val(3),ver=val(4),momS=val(5),yoyS=val(6),venS=val(7),embS=val(8),dpS=val(9);   // dpS: agregado al FINAL, no renumera lo anterior
     let ok=0; const total=names.length;
     if(wow&&wow.length){ d.wow=wow; ok++; }
     if(acc&&acc.length){ d.acciones=cleanRows(acc).map(r=>({fecha:r.Fecha,campana:r["Campaña"]||r.Campana,accion:r["Acción"]||r.Accion,detalle:r.Detalle,afecta:r.Producto_Afectado||r.Afecta||r["Afecta a"],estado:(r.Estado||"").trim(),analisis:r["Análisis"]||r.Analisis,ambito:r["Ambito"]||r["Ámbito"]})); ok++; }
@@ -1443,6 +1501,9 @@ async function boot(){
     if(yoyS&&yoyS.length){ d.yoy=cleanRows(yoyS); ok++; }
     if(venS&&venS.length){ d.ventanas=cleanRows(venS); ok++; }
     if(embS&&embS.length){ d.embudo=cleanRows(embS); ok++; }
+    /* dpValido() y no .length: si la pestaña no existe, gviz devuelve la 1ª hoja del Sheet
+       (Campanas_ASINs) — no vacía, pero con otro esquema. No cuenta como cargada. */
+    if(dpS&&dpValido(cleanRows(dpS))){ d.entrega=cleanRows(dpS); ok++; }
     mode = ok===0 ? "snapshot" : ok===total ? "live" : "parcial";
     if(res.some(r=>r.status==="rejected")) console.warn("Pestañas no cargadas:", res.map((r,i)=>r.status==="rejected"?names[i]:null).filter(Boolean).join(", "));
   }
@@ -1467,6 +1528,7 @@ async function boot(){
   //   línea, quitar los display:none del botón y la <section>, y sanear Modo B en mapCampanas.
   renderKanban(d.acciones);
   renderDiario(d.bitacora);
+  renderEntrega(d.entrega);
   renderPrecios(d.precios);
   renderFunnel(d.funnel);
   renderGlosario();
