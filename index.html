@@ -620,12 +620,38 @@ function parseCSV(txt){
   const head=rows.shift().map(h=>h.trim());
   return rows.filter(r=>r.some(x=>x!=="")).map(r=>{const o={};head.forEach((h,i)=>o[h]=(r[i]||"").trim());return o});
 }
-const gvizURL = sheet => `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheet)}`;
+/* Filtro server-side del kanban: las filas Ambito=interno (margenes, costos) NO deben bajar
+   al navegador. Solo aplica a Acciones_PPC; el resto de las pestanas se piden completas.
+   L = columna Ambito (12a). Si se inserta una columna a la izquierda en el Sheet, actualizar esta letra.
+   gviz no sabe referenciar por nombre de header, solo por letra: el acoplamiento es inevitable.
+   OJO: si la letra queda mal, gviz NO devuelve 4xx — responde 200 con un JSON de error. Lo caza gvizError().
+   OJO 2: esto reduce lo que baja el dashboard, pero NO protege el dato: el Sheet es legible sin sesion
+   y el SHEET_ID esta en el fuente. La proteccion real es mover las filas internas a otro documento. */
+const SHEET_TQ = { "Acciones_PPC": "select * where lower(L) = 'cliente'" };
+
+const gvizURL = (sheet,tq) => `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheet)}`
+  + (tq ? `&tq=${encodeURIComponent(tq)}` : "");
+
+/* gviz responde 200 + JSON en una query invalida. Sin esto parseCSV se lo traga como header
+   y devuelve [] — indistinguible de "no hay filas", que es justo el fallo silencioso a evitar. */
+function gvizError(txt){
+  const t=String(txt||"").trim();
+  if(t.charAt(0)!=="{") return null;
+  try{
+    const j=JSON.parse(t);
+    if(j.status!=="error") return null;
+    const e=(j.errors&&j.errors[0])||{};
+    return e.detailed_message||e.message||e.reason||"error gviz";
+  }catch(_){ return "respuesta no-CSV inesperada"; }
+}
 
 async function fetchSheet(name){
-  const r = await fetch(gvizURL(name));
+  const r = await fetch(gvizURL(name, SHEET_TQ[name]));
   if(!r.ok) throw new Error(name+" "+r.status);
-  return parseCSV(await r.text());
+  const txt = await r.text();
+  const err = gvizError(txt);
+  if(err) throw new Error(name+" · query gviz rechazada ("+err+") — revisar la letra de columna en SHEET_TQ");
+  return parseCSV(txt);
 }
 
 /* ── Render ── */
@@ -1223,19 +1249,25 @@ function weekOf(fechaStr){
   return {key, label};
 }
 function renderKanban(acc){
+  if(acc==null){   // fetch caido o query gviz rechazada: error explicito, no datos viejos disfrazados de vivos
+    document.getElementById("kanban").innerHTML =
+      `<div style="grid-column:1/-1">${emptyState("No se pudieron cargar las acciones · revisa la pestana Acciones_PPC y el filtro de Ambito en SHEET_TQ (detalle en consola)")}</div>`;
+    const s0=document.getElementById("accWeek"); if(s0) s0.innerHTML=`<option value="">—</option>`;
+    return;
+  }
   acc=(acc||[]).filter(a=>(a.ambito||"").trim().toLowerCase()==="cliente");   // P0-2: whitelist PRIMERO (interno/vacío/faltante NO entra)
   acc.forEach(a=>{ const w=weekOf(a.fecha); a._wkKey=w?w.key:""; a._wkLbl=w?w.label:""; });   // semana Lun-Dom por card
   const drawCols=wkKey=>{
     const rows = wkKey ? acc.filter(a=>a._wkKey===wkKey) : acc;   // filtro semana DESPUÉS del whitelist
-    const groups={Hecho:[],Pendiente:[],"Esperando-Roger":[]};
-    rows.forEach(a=>{(groups[a.estado]||(groups[a.estado]=[])).push(a)});
+    const groups={hecho:[],pendiente:[],"esperando-roger":[]};   // claves normalizadas: trim+lowercase
+    rows.forEach(a=>{const k=String(a.estado||"").trim().toLowerCase(); (groups[k]||(groups[k]=[])).push(a)});   // "Hecho " / "HECHO" caen en la misma columna
     const col=(key,title,cssc)=>{
       const items=(groups[key]||[]).slice().sort((a,b)=>(b.fecha||"").localeCompare(a.fecha||""));   // newest→oldest
       return `<div class="col ${cssc}"><h3>${title}<span class="cnt">${items.length}</span></h3>
         ${items.length?items.map(a=>`<div class="card"><div class="ca">${a.accion} · ${a.campana}</div><div class="cd">${a.detalle}</div>${a.analisis?`<div class="can"><b>🔍 Análisis</b>${a.analisis}</div>`:""}${a.afecta?`<div class="cf">${a.afecta}</div>`:""}<div class="cc">${a.fecha}</div></div>`).join(""):`<div class="card-empty" style="color:var(--gris);font-size:.82rem;font-style:italic;padding:14px 4px;text-align:center">— nada pendiente —</div>`}</div>`;
     };
     document.getElementById("kanban").innerHTML =
-      col("Hecho","Hecho","done")+col("Pendiente","Por hacer","todo")+col("Esperando-Roger","Espera cliente","wait");
+      col("hecho","Hecho","done")+col("pendiente","Por hacer","todo")+col("esperando-roger","Espera cliente","wait");   // 1er arg = clave normalizada, 2do = titulo visible
   };
   // dropdown: semanas presentes en las cards, newest→oldest (dinámico)
   const weeks=[], seen={};
@@ -1371,7 +1403,8 @@ async function boot(){
     let ok=0; const total=names.length;
     if(wow&&wow.length){ d.wow=wow; ok++; }
     if(camp&&camp.length){ d.campanasView=mapCampanas(camp); ok++; }
-    if(acc&&acc.length){ d.acciones=cleanRows(acc).map(r=>({fecha:r.Fecha,campana:r["Campaña"]||r.Campana,accion:r["Acción"]||r.Accion,detalle:r.Detalle,afecta:r.Producto_Afectado||r.Afecta||r["Afecta a"],estado:r.Estado,analisis:r["Análisis"]||r.Analisis,ambito:r["Ambito"]})); ok++; }
+    if(acc&&acc.length){ d.acciones=cleanRows(acc).map(r=>({fecha:r.Fecha,campana:r["Campaña"]||r.Campana,accion:r["Acción"]||r.Accion,detalle:r.Detalle,afecta:r.Producto_Afectado||r.Afecta||r["Afecta a"],estado:(r.Estado||"").trim(),analisis:r["Análisis"]||r.Analisis,ambito:r["Ambito"]||r["Ámbito"]})); ok++; }
+    else d.acciones = acc ? [] : null;   // GUARDA: [] = respondio sin filas · null = fallo. NUNCA dejar el snapshot de junio pasando por dato vivo.
     if(bita&&bita.length){ d.bitacora=bita; ok++; }
     if(fun&&fun.length){ d.funnel=fun; ok++; }
     if(pre&&pre.length){ d.precios=pre; ok++; }
