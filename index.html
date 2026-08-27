@@ -319,6 +319,12 @@ footer b{color:var(--tinta)}
 .emb-call-d{font-size:.85rem; font-weight:700}
 .emb-call-txt{font-size:.83rem; color:var(--gris); line-height:1.5; margin-top:8px}
 .d-alert{color:var(--ambar)}
+/* Callout pendiente de fuente: estado intencional "en curso", NO error ni dato faltante.
+   Tinte de marca (verde palido) en vez de ambar/rojo, para que no lea como alerta. */
+.emb-call-pend{background:var(--naranja-pal); border-color:var(--naranja-bd)}
+.emb-call-badge{display:inline-block; font-size:.78rem; font-weight:700; letter-spacing:.02em;
+                color:var(--naranja); background:var(--blanco); border:1px solid var(--naranja-bd);
+                border-radius:999px; padding:5px 12px}
 @media(max-width:720px){
   .emb-lv{padding:13px 16px}
   .emb-lv2{width:78%} .emb-lv3{width:56%}
@@ -350,7 +356,10 @@ footer b{color:var(--tinta)}
         <button class="tab" data-target="comparativa">Comparativa</button>
         <button class="tab" data-target="funnel" style="display:none">Funnel</button>
         <button class="tab" data-target="embudo">Embudo</button>
-        <button class="tab" data-target="campanas">Campañas</button>
+        <!-- Campañas: retirada del nav (27-ago). Los nombres de campaña del Sheet traen ASINs,
+             modelo real y siglas — cliente-facing sin sanear. La <section data-tab="campanas">
+             queda oculta y sin render; la pestaña Campanas_ASINs del Sheet queda intacta. -->
+        <button class="tab" data-target="campanas" style="display:none">Campañas</button>
         <button class="tab" data-target="acciones">Acciones</button>
       </div>
     </div>
@@ -419,7 +428,7 @@ footer b{color:var(--tinta)}
     <div class="fam" id="fam"></div>
   </section>
 
-  <section id="s-camp" class="panel" data-tab="campanas">
+  <section id="s-camp" class="panel" data-tab="campanas" style="display:none">
     <div class="shead">
       <span class="snum">03</span><h2>Campañas · dónde metemos la aguja</h2>
       <div class="snote">Eficiencia por campaña · ventana 16-22 jul</div>
@@ -617,6 +626,9 @@ function parseCSV(txt){
     else { if(c=='"')q=true; else if(c==',' ){f.push(cur);cur=""} else if(c=='\n'){f.push(cur);rows.push(f);f=[];cur=""} else if(c!='\r')cur+=c }
   }
   if(cur!==""||f.length){f.push(cur);rows.push(f)}
+  if(!rows.length) return [];   // hoja vacía: gviz devuelve 200 con 0 bytes. Sin esta guarda
+                                // rows.shift() da undefined y el .map() de abajo tira TypeError,
+                                // lo que marcaba la promesa rejected y clavaba el badge en "parcial".
   const head=rows.shift().map(h=>h.trim());
   return rows.filter(r=>r.some(x=>x!=="")).map(r=>{const o={};head.forEach((h,i)=>o[h]=(r[i]||"").trim());return o});
 }
@@ -1011,28 +1023,45 @@ function renderEmbudo(rows){
       <span class="emb-antes">antes ${_porMil(rp)} de cada 1.000</span>
     </div>`;
   };
-  /* El veredicto y los textos de los callouts estaban hardcodeados con el relato de la
-     semana 13-19 ("compró un tercio menos", "−7% de tráfico") y seguían mostrándose sobre
-     los números de cualquier semana posterior. La hoja Funnel no tiene columna de texto de
-     donde leerlos, así que se dejan en blanco: mejor vacío que contradiciendo la cifra de
-     al lado. Prosa dinámica = rediseño posterior, con spec del cliente. */
+  /* Los textos de los callouts estaban hardcodeados con el relato de la semana 13-19 y se
+     mostraban sobre los números de cualquier semana posterior. Ahora se leen del Sheet si la
+     hoja Funnel gana una columna de texto (Nota/Texto/Detalle/Descripción); si no, para el
+     estado pendiente se usa el default de CALL_PEND. Con dato real y sin texto: sin prosa.
+
+     Un callout con celda actual vacía NO se oculta: se dibuja "En análisis". Ocultarlo hacía
+     desaparecer el carrito del informe, y es una línea de trabajo en curso, no un hueco. */
   const calls=[
-    {ico:"🛒❌", tit:"Carrito abandonado", key:"carrito abandonado", alerta:true},
+    {ico:"🛒❌", icoPend:"🛒", tit:"Carrito abandonado", key:"carrito abandonado", alerta:true},
     {ico:"📄", tit:"Vistas de ficha", key:"vistas de ficha", alerta:false}
   ];
+  const CALL_PEND={
+    "carrito abandonado":"Estamos activando una medición avanzada para ver cuánta gente añade al carrito sin comprar y diseñar la estrategia de recuperación.",
+    "vistas de ficha":"Estamos incorporando esta medición para seguir cuánta gente llega a ver la ficha del producto."
+  };
+  /* texto del Sheet si la hoja gana una columna de prosa; tolera varios nombres */
+  const _callTxt=r=>{const k=Object.keys(r||{}).find(k=>/^(nota|texto|detalle|descripci)/i.test(k));return k?String(r[k]||"").trim():"";};
   const callHTML=calls.map(c=>{
     const r=get(c.key);
     if(!r) return "";
     const cur=v(r,A), prev=v(r,P);
-    if(cur==null) return "";   // el callout ES el número actual: sin él la tarjeta no aporta
-                               // nada (quedaría "—" y un Δ vacío). Tener sólo el valor previo
-                               // no alcanza. Pendiente de fuente ⇒ celda vacía ⇒ no se dibuja.
+    const txt=_callTxt(r);
+    if(cur==null){   // pendiente de fuente ⇒ "En análisis". Sin número, sin Δ, sin color de alerta.
+      return `<div class="emb-call emb-call-pend">
+        <div class="emb-call-tit"><span>${c.icoPend||c.ico}</span>${c.tit}</div>
+        <div><span class="emb-call-badge">En análisis</span></div>
+        <div class="emb-call-txt">${txt||CALL_PEND[c.key]||""}</div>
+        </div>`;
+    }
     const d=embDelta(cur,prev,c.alerta);
     return `<div class="emb-call">
       <div class="emb-call-tit"><span>${c.ico}</span>${c.tit}</div>
       <div class="emb-call-num">${_embMil(cur)} <span class="emb-call-d ${d.cls}">${d.txt}</span></div>
+      ${txt?`<div class="emb-call-txt">${txt}</div>`:""}
       </div>`;
   }).join("");
+  /* La nota de los 90 días describe el NÚMERO del carrito: sin número no aplica.
+     Antes colgaba de callHTML, que ahora nunca está vacío. */
+  const _carritoConDato=(()=>{const r=get("carrito abandonado");return !!(r&&v(r,A)!=null);})();
   const guia="Se lee de arriba (los que nos ven) hacia abajo (los que compran). Cada nivel más angosto = menos gente llega; el salto más grande marca dónde se pierde la venta.";
   el.innerHTML=`<div class="emb-guia">${guia}</div>
     <div class="emb-wrap">
@@ -1043,7 +1072,7 @@ function renderEmbudo(rows){
       ${barra(niveles[2])}
     </div>
     ${callHTML?`<div class="emb-calls">${callHTML}</div>`:""}
-    <div class="pricefoot">Embudo del recorrido publicitario · ${_ventanas}.${callHTML?" El carrito abandonado es de los últimos 90 días (Brand Analytics).":""}</div>`;
+    <div class="pricefoot">Embudo del recorrido publicitario · ${_ventanas}.${_carritoConDato?" El carrito abandonado corresponde a los últimos 90 días.":""}</div>`;
 }
 function renderFamVentanas(rows, wow){
   const el=document.getElementById("famVentanas");
@@ -1391,23 +1420,24 @@ async function boot(){
   d.veredicto=[]; d.mom=[]; d.yoy=[]; d.ventanas=[]; d.embudo=[];
   let mode="snapshot";
   if(SHEET_ID){
-    const names=["WoW_KPIs","Campanas_ASINs","Acciones_PPC","Bitacora","Funnel_Etapas","Precios_Impacto","Veredicto","MoM_KPIs","YoY_Negocio","Modelos_Ventanas","Funnel"];
+    const names=["WoW_KPIs","Acciones_PPC","Bitacora","Funnel_Etapas","Veredicto","MoM_KPIs","YoY_Negocio","Modelos_Ventanas","Funnel"];
     const res=await Promise.allSettled(names.map(n=>fetchSheet(n)));
     const val=i=>res[i].status==="fulfilled"?res[i].value:null;
-    /* OJO: "Funnel_Etapas" (índice 4) es la hoja vieja del tab Funnel oculto;
-       "Funnel" (índice 10) es la del tab Embudo. Son hojas distintas.
+    /* OJO: "Funnel_Etapas" (índice 3) es la hoja vieja del tab Funnel oculto;
+       "Funnel" (índice 8) es la del tab Embudo. Son hojas distintas.
        val(i) es POSICIONAL: sacar o agregar un nombre obliga a renumerar TODO lo que sigue.
-       "Modelos_WoW" se retiró (27-ago): su render está comentado, así que solo gastaba un
-       fetch y dejaba el badge en "parcial" para siempre al contar en el total. */
-    const wow=val(0),camp=val(1),acc=val(2),bita=val(3),fun=val(4),pre=val(5),ver=val(6),momS=val(7),yoyS=val(8),venS=val(9),embS=val(10);
+       Retiradas del array (su render está comentado; solo gastaban un fetch y dejaban el
+       badge en "parcial" para siempre al contar en el total):
+         · "Modelos_WoW"     (27-ago)
+         · "Precios_Impacto" (27-ago) — pestaña vacía; el tab Precios ya estaba disabled
+         · "Campanas_ASINs"  (27-ago) — tab oculta por fuga de ASINs; no se descarga */
+    const wow=val(0),acc=val(1),bita=val(2),fun=val(3),ver=val(4),momS=val(5),yoyS=val(6),venS=val(7),embS=val(8);
     let ok=0; const total=names.length;
     if(wow&&wow.length){ d.wow=wow; ok++; }
-    if(camp&&camp.length){ d.campanasView=mapCampanas(camp); ok++; }
     if(acc&&acc.length){ d.acciones=cleanRows(acc).map(r=>({fecha:r.Fecha,campana:r["Campaña"]||r.Campana,accion:r["Acción"]||r.Accion,detalle:r.Detalle,afecta:r.Producto_Afectado||r.Afecta||r["Afecta a"],estado:(r.Estado||"").trim(),analisis:r["Análisis"]||r.Analisis,ambito:r["Ambito"]||r["Ámbito"]})); ok++; }
     else d.acciones = acc ? [] : null;   // GUARDA: [] = respondio sin filas · null = fallo. NUNCA dejar el snapshot de junio pasando por dato vivo.
     if(bita&&bita.length){ d.bitacora=bita; ok++; }
     if(fun&&fun.length){ d.funnel=fun; ok++; }
-    if(pre&&pre.length){ d.precios=pre; ok++; }
     if(ver&&ver.length){ d.veredicto=cleanRows(ver); ok++; }
     if(momS&&momS.length){ d.mom=cleanRows(momS); ok++; }
     if(yoyS&&yoyS.length){ d.yoy=cleanRows(yoyS); ok++; }
@@ -1432,7 +1462,9 @@ async function boot(){
   renderEmbudo(d.embudo);
   // renderFam(d.familias); // tabla por familia: placeholder viejo (€13.316 no coincide con cards reales); reactivar con dato real por familia
   document.getElementById("fam").innerHTML = emptyState("Próximamente · se carga con el Business Report by child");
-  renderCamp(d.campanasView);
+  // renderCamp(d.campanasView);   // tab oculta (fuga de ASINs): no se dibuja para que los
+  //   nombres crudos no queden en el DOM de una página pública. Reactivar = descomentar esta
+  //   línea, quitar los display:none del botón y la <section>, y sanear Modo B en mapCampanas.
   renderKanban(d.acciones);
   renderDiario(d.bitacora);
   renderPrecios(d.precios);
