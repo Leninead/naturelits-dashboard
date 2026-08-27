@@ -571,6 +571,9 @@ const eur = n => n==null ? "—" : "€"+Math.round(n).toLocaleString("es-ES");
 const eur2 = n => n==null ? "—" : "€"+n.toLocaleString("es-ES",{minimumFractionDigits:2,maximumFractionDigits:2});
 const pctChg = (cur,prev) => prev ? (cur/prev-1)*100 : 0;
 const arrow = d => d>0.05?"↑":d<-0.05?"↓":"→";
+/* Signo explícito del delta. El cliente lee "−7%", no "7%" con una flecha al lado:
+   la flecha sola obliga a interpretar, el signo no. Usa el menos tipográfico (−). */
+const signo = d => d>0.05?"+":(d<-0.05?"−":"");
 const cls = (d,goodUp=true) => Math.abs(d)<0.05?"flat":((d>0)===goodUp?"up":"down");
 
 /* parse número tolerante (es-ES / en) → null si vacío o "—" */
@@ -654,14 +657,14 @@ function renderKPIs(wow){
     <div class="kpi" style="animation-delay:${i*70}ms">
       <div class="lbl">${k.lbl}</div>
       <div class="val">${k.val}</div>
-      <div class="delta ${cls(k.d,k.up)}">${arrow(k.d)} ${Math.abs(k.d).toFixed(1).replace(".",",")}${k.unit||"%"} <span style="color:var(--gris);font-weight:400">WoW</span></div>
+      <div class="delta ${cls(k.d,k.up)}">${arrow(k.d)} ${signo(k.d)}${Math.abs(k.d).toFixed(1).replace(".",",")}${k.unit||"%"} <span style="color:var(--gris);font-weight:400">WoW</span></div>
     </div>`).join("");
 }
 function renderFam(fam){
   const max=Math.max(...fam.map(f=>f.sTW));
   document.getElementById("fam").innerHTML = fam.map(f=>{
     const d=pctChg(f.sTW,f.sPW);
-    const dtxt=f.sPW?`<span class="${cls(d,true)}">${arrow(d)}${Math.abs(d).toFixed(0)}%</span>`:`<span class="up">nuevo</span>`;
+    const dtxt=f.sPW?`<span class="${cls(d,true)}">${arrow(d)}${signo(d)}${Math.abs(d).toFixed(0)}%</span>`:`<span class="up">nuevo</span>`;
     return `<div class="frow">
       <div class="fname">${f.fam}${f.deficit?'<span class="deficit">defic.</span>':''}</div>
       <div class="fbar-track"><div class="fbar ${f.foco?'':'muted'}" data-w="${(f.sTW/max*100).toFixed(1)}"></div></div>
@@ -681,7 +684,7 @@ function renderBizKPIs(wow){
   document.getElementById("bizkpis").innerHTML=items.map((k,i)=>`
     <div class="kpi" style="animation-delay:${i*70}ms"><div class="lbl">${k.lbl}</div>
       <div class="val">${k.val}</div>
-      <div class="delta ${cls(k.d,k.up)}">${arrow(k.d)} ${Math.abs(k.d).toFixed(1).replace(".",",")}${k.unit||"%"} <span style="color:var(--gris);font-weight:400">WoW</span></div></div>`).join("");
+      <div class="delta ${cls(k.d,k.up)}">${arrow(k.d)} ${signo(k.d)}${Math.abs(k.d).toFixed(1).replace(".",",")}${k.unit||"%"} <span style="color:var(--gris);font-weight:400">WoW</span></div></div>`).join("");
   const _sn=document.getElementById("bizSnote");
   if(_sn) _sn.textContent="Ventas totales, CVR y BuyBox · "+c.Semana+(wow.length>=2?(" vs "+wow[wow.length-2].Semana):"");
 }
@@ -893,12 +896,23 @@ function famWinCols(rows){
            inv:    keys.filter(k=>/^Inv_SP_/i.test(k)) };
 }
 const prettyWin = k => k.replace(/^(Ventas_|Inv_SP_)/i,"").replace(/(\d)([a-zA-Z]{3})/g,"$1 $2");
-/* Δ en € con signo y color (verde positivo / rojo negativo); "—" si falta una celda */
-function eurDelta(n){
-  if(n==null) return {txt:"—", cls:"d-flat"};
-  const r=Math.round(n);
-  if(r===0) return {txt:"€0", cls:"d-flat"};
-  return {txt:(r>0?"+":"-")+"€"+Math.abs(r).toLocaleString("es-ES"), cls:r>0?"d-up":"d-down"};
+/* Δ% con flecha + signo + color, para la tabla por familia. Reemplaza al Δ en € que
+   había antes: el cliente pidió leer "invertí +X% y vendí −Y%", que sólo se compara
+   en porcentaje (los euros de Serene y los de Xstar no son comparables entre sí).
+
+   `invertido` para magnitudes donde SUBIR es malo (la inversión): ahí el verde va con
+   la bajada. Sin él, una familia que dispara el gasto se pintaría de verde.
+
+   Devuelve "—" cuando no hay división posible: falta una celda o la previa es 0.
+   Previa 0 y actual 0 NO es "0%", es "no calculable" — y previa 0 con actual >0
+   tampoco es "+∞%". Actual 0 sobre previa >0 sí es un −100,0% legítimo. */
+function pctDelta(cur, prev, invertido){
+  if(cur==null || prev==null || prev===0) return {txt:"—", cls:"d-flat"};
+  const p=(cur/prev-1)*100;
+  if(Math.abs(p)<0.05) return {txt:"▬ 0,0%", cls:"d-flat"};
+  const num=Math.abs(p).toLocaleString("es-ES",{minimumFractionDigits:1,maximumFractionDigits:1});
+  const bueno = invertido ? p<0 : p>0;
+  return {txt:`${p>0?"▲":"▼"} ${p>0?"+":"−"}${num}%`, cls: bueno?"d-up":"d-down"};
 }
 /* ── Embudo · pirámide invertida (hoja "Funnel": Etapa | Tipo | Valor_<previa> | Valor_<actual>) ──
    Modo B: sin siglas. Las tasas van en lenguaje natural ("X de cada 1.000").
@@ -1017,15 +1031,18 @@ function renderFamVentanas(rows, wow){
   const body=rows.map(r=>{
     const fam=(r.Familia||"").trim();
     const isTot=/^total/i.test(fam), isSer=/serene/i.test(fam);
+    /* Ambos Δ% salen de las columnas DETECTADAS (vPrev/vCur, iPrev/iCur), nunca de
+       nombres fijos: la semana que viene cambian de nombre y esto sigue funcionando. */
     const cur=numES(r[vCur]), prev=numES(r[vPrev]);
-    const d=(cur==null||prev==null)?null:cur-prev;
-    const dd=eurDelta(d);
+    const dVen=pctDelta(cur, prev, false);
+    const iC=iCur?numES(r[iCur]):null, iP=iPrev?numES(r[iPrev]):null;
+    const dInv=pctDelta(iC, iP, true);            // invertido: más inversión = rojo
     const trcls=[isTot?"famv-total":"", isSer?"famv-serene":""].filter(Boolean).join(" ");
-    const cells=`<td>${eur(numES(r[vPrev]))}</td><td>${eur(numES(r[vCur]))}</td>`;
-    const invCells=`<td>${eur(iPrev?numES(r[iPrev]):null)}</td><td>${eur(iCur?numES(r[iCur]):null)}</td>`;
+    const cells=`<td>${eur(prev)}</td><td>${eur(cur)}</td>`;
+    const invCells=`<td>${eur(iP)}</td><td>${eur(iC)}</td>`;
     const lectura=(r.Lectura||"").trim();
     return `<tr${trcls?` class="${trcls}"`:""}>
-      <td>${fam||"—"}</td>${cells}<td class="${dd.cls}">${dd.txt}</td>${invCells}
+      <td>${fam||"—"}</td>${cells}<td class="${dVen.cls}">${dVen.txt}</td>${invCells}<td class="${dInv.cls}">${dInv.txt}</td>
       <td class="famv-lectura">${lectura||"—"}</td></tr>`;
   }).join("");
   const _tot=rows.find(r=>/^total/i.test((r.Familia||"").trim()))||{};
@@ -1050,7 +1067,7 @@ function renderFamVentanas(rows, wow){
     <div class="famv-sub">Ventas del negocio · Últimos 7 días · cierre jueves · foco de mejora por familia</div>
     <div class="famv-banner">${banner}</div>
     <div style="overflow-x:auto"><table class="wt">
-      <thead><tr><th>Familia</th><th>Ventas ${prettyWin(vPrev)}</th><th>Ventas ${prettyWin(vCur)}</th><th>Δ Ventas</th><th>Inv. SP ${iPrev?prettyWin(iPrev):''}</th><th>Inv. SP ${iCur?prettyWin(iCur):''}</th><th>Lectura</th></tr></thead>
+      <thead><tr><th>Familia</th><th>Ventas ${prettyWin(vPrev)}</th><th>Ventas ${prettyWin(vCur)}</th><th>Δ% Ventas</th><th>Inv. SP ${iPrev?prettyWin(iPrev):''}</th><th>Inv. SP ${iCur?prettyWin(iCur):''}</th><th>Δ% Inv</th><th>Lectura</th></tr></thead>
       <tbody>${body}</tbody></table></div>
     <div class="pricefoot">Inv. = inversión en Sponsored Products por producto anunciado (suma exacta por familia: ${eur(invPrevTot)} / ${eur(invCurTot)}). La inversión total de la cuenta (visible en Resultados y Comparativa) incluye además marca y recuperación de visitantes, que no se atribuyen por modelo — por eso este cuadro usa solo SP.</div>`;
 }
