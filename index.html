@@ -1372,7 +1372,7 @@ function renderEntrega(rows){
   if(!el) return;
   rows=cleanRows(rows);
   if(!dpValido(rows)){ el.innerHTML=emptyState("Seguimiento en preparación"); return; }
-  const banner=`<div class="dp-banner">Primeros días del seguimiento del plazo de entrega, por las referencias que más venden. Medición preliminar — con pocos días todavía no marcamos tendencia. Desde mañana la medición es diaria a hora fija; en una semana la cruzamos con la conversión.</div>`;
+  const banner=`<div class="dp-banner">Seguimiento diario del plazo de entrega, por las referencias que más venden — el mismo plazo que ve el comprador en la ficha. Los primeros días ya muestran un patrón: el grueso se estabilizó en un plazo algo mayor y un par de medidas se están alargando más. Lo sigo a diario y en unos días lo cruzo con la conversión para medir cuánto pesa la entrega en el cierre.</div>`;
   const fechas=[...new Set(rows.map(r=>(r.Fecha||"").trim()).filter(Boolean))].sort();   // ISO ⇒ cronológico
   /* Orden de referencias = orden de aparición en la hoja (se pega por volumen, top primero).
      Si la hoja gana una columna Units_30d con dato para TODAS, esa manda. */
