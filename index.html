@@ -1372,7 +1372,7 @@ function renderEntrega(rows){
   if(!el) return;
   rows=cleanRows(rows);
   if(!dpValido(rows)){ el.innerHTML=emptyState("Seguimiento en preparación"); return; }
-  const banner=`<div class="dp-banner">Seguimiento diario del plazo de entrega, por las referencias que más venden — el mismo plazo que ve el comprador en la ficha. Se mide todos los días. El plazo del grueso subió y después se estabilizó; un par de medidas siguen más largas. Lo cruzo con la conversión en cuanto tenga más días, para medir cuánto pesa la entrega en el cierre.</div>`;
+  const banner=`<div class="dp-banner">Seguimiento diario del plazo de entrega, por las referencias que más venden — el mismo plazo que ve el comprador en la ficha. Se mide todos los días. El plazo se alargó en la última semana de agosto, se frenó unos días y volvió a moverse levemente. Sin una mejora sostenida todavía. Lo cruzo con la conversión en cuanto tenga más días, para medir cuánto pesa la entrega en el cierre.</div>`;
   const fechas=[...new Set(rows.map(r=>(r.Fecha||"").trim()).filter(Boolean))].sort();   // ISO ⇒ cronológico
   /* Orden de referencias = orden de aparición en la hoja (se pega por volumen, top primero).
      Si la hoja gana una columna Units_30d con dato para TODAS, esa manda. */
