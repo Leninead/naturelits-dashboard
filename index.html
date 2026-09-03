@@ -322,11 +322,17 @@ footer b{color:var(--tinta)}
 /* Entrega · plazo de entrega */
 .dp-banner{background:var(--naranja-pal); border:1px solid var(--naranja-bd); border-radius:12px;
            padding:14px 18px; font-size:.88rem; line-height:1.55; color:var(--tinta); margin-bottom:18px}
+.dp-banner p{margin:0 0 9px}  .dp-banner p:last-child{margin-bottom:0}
 .dp-top{font-weight:500; color:var(--gris); font-size:.8rem}
 #entrega td.dp-c{font-family:'IBM Plex Mono',monospace; font-variant-numeric:tabular-nums; white-space:nowrap}
+/* Dia de semana bajo la fecha en el encabezado de Entrega. En bloque para no ensanchar la
+   columna: la tabla ya tiene scroll horizontal y sumar " / lun" en linea lo agravaba. */
+#entrega th .dp-dia{display:block; font-size:.68rem; font-weight:600; color:var(--gris);
+                    letter-spacing:.02em; margin-top:2px; text-transform:none}
 /* Callout pendiente de fuente: estado intencional "en curso", NO error ni dato faltante.
    Tinte de marca (verde palido) en vez de ambar/rojo, para que no lea como alerta. */
 .emb-call-pend{background:var(--naranja-pal); border-color:var(--naranja-bd)}
+.emb-call-wide{grid-column:1/-1}   /* anuncio a ancho completo, no una tercera tarjeta huerfana */
 .emb-call-badge{display:inline-block; font-size:.78rem; font-weight:700; letter-spacing:.02em;
                 color:var(--naranja); background:var(--blanco); border:1px solid var(--naranja-bd);
                 border-radius:999px; padding:5px 12px}
@@ -1073,6 +1079,15 @@ function renderEmbudo(rows){
       ${txt?`<div class="emb-call-txt">${txt}</div>`:""}
       </div>`;
   }).join("");
+  /* Anuncio del embudo de negocio completo (organico + pagado). Solo placeholder: el embudo
+     de arriba es unicamente el recorrido publicitario, y no hay dato de organico en el Sheet.
+     Mismo estilo que los callouts pendientes; ocupa las dos columnas porque es un anuncio,
+     no una tercera metrica. */
+  const proxHTML=`<div class="emb-call emb-call-pend emb-call-wide">
+    <div class="emb-call-tit"><span>🧭</span>Embudo de negocio completo</div>
+    <div><span class="emb-call-badge">Próximamente</span></div>
+    <div class="emb-call-txt">Al recorrido publicitario que ves arriba se sumará el de las ventas orgánicas, para tener el embudo completo del negocio: cuánta gente llega por búsqueda natural y cuánta por publicidad, y en qué punto se pierde la venta en cada camino.</div>
+    </div>`;
   /* La nota de los 90 días describe el NÚMERO del carrito: sin número no aplica.
      Antes colgaba de callHTML, que ahora nunca está vacío. */
   const _carritoConDato=(()=>{const r=get("carrito abandonado");return !!(r&&v(r,A)!=null);})();
@@ -1085,7 +1100,7 @@ function renderEmbudo(rows){
       ${paso(niveles[1],niveles[2],true)}
       ${barra(niveles[2])}
     </div>
-    ${callHTML?`<div class="emb-calls">${callHTML}</div>`:""}
+    <div class="emb-calls">${callHTML}${proxHTML}</div>
     <div class="pricefoot">Embudo del recorrido publicitario · ${_ventanas}.${_carritoConDato?" El carrito abandonado corresponde a los últimos 90 días.":""}</div>`;
 }
 function renderFamVentanas(rows, wow){
@@ -1366,13 +1381,32 @@ const dpRef = r => {
   const m=(r.Modelo||"").trim();
   return `${DP_NOMBRE[m.toLowerCase()]||m} ${(r.Talle||"").trim().replace(/x/i,"×")}`.trim();
 };
+const DIAORD=["dom","lun","mar","mié","jue","vie","sáb"];   // getDay(): 0=domingo
+/* Dia de semana CALCULADO desde la fecha ISO, nunca tipeado: vale para cualquier fecha futura.
+   Date.UTC (no new Date("2026-08-25")) para que la zona horaria no corra el dia uno atras.
+   Roger lo pidio para leer donde acelerar (dom/lun/mar) y donde frenar (jue/vie, que caen en
+   fin de semana sin reparto y alargan el plazo que ve el comprador). */
+const dpDiaSem = f => {const m=String(f||"").match(/(\d{4})-(\d{2})-(\d{2})/);
+  return m ? DIAORD[new Date(Date.UTC(+m[1],+m[2]-1,+m[3])).getUTCDay()] : "";};
 const dpFecha = f => {const m=String(f||"").match(/(\d{4})-(\d{2})-(\d{2})/); return m?`${+m[3]} ${MESORD[+m[2]-1]}`:String(f||"");};
+/* Encabezado en dos lineas: la fecha no se ensancha, asi que la tabla no gana scroll extra. */
+const dpFechaTh = f => {const d=dpDiaSem(f); return `${dpFecha(f)}${d?`<span class="dp-dia">${d}</span>`:""}`;};
 function renderEntrega(rows){
   const el=document.getElementById("entrega");
   if(!el) return;
   rows=cleanRows(rows);
   if(!dpValido(rows)){ el.innerHTML=emptyState("Seguimiento en preparación"); return; }
-  const banner=`<div class="dp-banner">Seguimiento diario del plazo de entrega, por las referencias que más venden — el mismo plazo que ve el comprador en la ficha. Se mide todos los días. El plazo se alargó en la última semana de agosto, se frenó unos días y volvió a moverse levemente. Sin una mejora sostenida todavía. Lo cruzo con la conversión en cuanto tenga más días, para medir cuánto pesa la entrega en el cierre.</div>`;
+  /* Banner descriptivo: SOLO lo que el propio cuadro muestra, para que el cliente pueda
+     verificar cada frase mirando las columnas. NO afirma el ciclo por dia de semana
+     (plazos mas largos hacia el fin de semana): con 9 dias medidos hay un solo jueves y un
+     solo viernes, asi que ese efecto es indistinguible del salto puntual del 27-ago. Se
+     enuncia como hipotesis en seguimiento, no como hallazgo. Revisar cuando haya 3+
+     observaciones por dia de semana. */
+  const banner=`<div class="dp-banner">
+    <p>Seguimiento diario del plazo de entrega, por las referencias que más venden — el mismo plazo que ve el comprador en la ficha. Se mide todos los días.</p>
+    <p>El 27 de agosto el plazo se amplió unos tres días de golpe. Después se fue recortando y desde el 30 quedó estable, en un nivel algo peor que el de antes del salto; en el último día medido el margen vuelve a ensancharse. No hay todavía una mejora sostenida. Se puede seguir en el cuadro, columna por columna, de izquierda a derecha.</p>
+    <p>Estoy vigilando además si el plazo se alarga de forma regular hacia el final de la semana. Con los días medidos hasta ahora ese posible patrón no se puede separar del deterioro puntual de fin de agosto: harían falta un par de semanas más de seguimiento para afirmarlo. Lo cruzo con la conversión en cuanto tenga más días, para medir cuánto pesa la entrega en el cierre.</p>
+    </div>`;
   const fechas=[...new Set(rows.map(r=>(r.Fecha||"").trim()).filter(Boolean))].sort();   // ISO ⇒ cronológico
   /* Orden de referencias = orden de aparición en la hoja (se pega por volumen, top primero).
      Si la hoja gana una columna Units_30d con dato para TODAS, esa manda. */
@@ -1385,7 +1419,7 @@ function renderEntrega(rows){
     celda[dpRef(r)+"|"+(r.Fecha||"").trim()] = (mn!=null&&mx!=null) ? `${mn}-${mx} días` : "—"; });
   if(!fechas.length || !orden.length){ el.innerHTML=emptyState("Seguimiento en preparación"); return; }
   el.innerHTML = banner + `<div style="overflow-x:auto"><table class="tbl" id="entrega-t">
-    <thead><tr><th>Referencia</th>${fechas.map(f=>`<th class="num">${dpFecha(f)}</th>`).join("")}</tr></thead>
+    <thead><tr><th>Referencia</th>${fechas.map(f=>`<th class="num">${dpFechaTh(f)}</th>`).join("")}</tr></thead>
     <tbody>${orden.map((k,i)=>`<tr>
       <td class="cn">${k}${i===0?` <span class="dp-top">· la más vendida</span>`:""}</td>
       ${fechas.map(f=>`<td class="num dp-c">${celda[k+"|"+f]||"—"}</td>`).join("")}
