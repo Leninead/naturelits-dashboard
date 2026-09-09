@@ -342,6 +342,27 @@ footer b{color:var(--tinta)}
   .emb-big{font-size:1.25rem}
   .emb-calls{grid-template-columns:1fr}
 }
+
+/* ── Nature + Referencias ── */
+.badge-new { background:#16a34a; color:#fff; font-size:0.7rem; padding:2px 6px; border-radius:4px; margin-left:6px; vertical-align:middle; }
+.badge-grupo { font-size:0.75rem; padding:2px 8px; border-radius:10px; font-weight:600; }
+.grupo-nueva { background:#dbeafe; color:#1d4ed8; }
+.grupo-preexistente { background:#f3f4f6; color:#374151; }
+.stop-loss-alert td { background:#fef2f2 !important; }
+.delta-pos { color:#16a34a; font-weight:600; }
+.delta-neg { color:#dc2626; font-weight:600; }
+.note-atribucion { font-size:0.8rem; color:#6b7280; margin-top:12px; }
+.empty-state { color:#9ca3af; font-style:italic; padding:24px 0; }
+/* .section-header/.subtitle/.data-table no existian en la hoja: sin esto los dos paneles
+   nuevos quedaban como HTML crudo al lado del resto. Calcan .shead/.snote/.tbl. */
+.section-header { margin-bottom:22px; }
+.section-header h2 { margin-bottom:6px; }
+.subtitle { font-size:.82rem; color:var(--gris); margin:0; }
+.data-table { width:100%; border-collapse:collapse; font-size:.86rem; }
+.data-table th { text-align:left; font-size:.68rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--gris); padding:0 12px 10px; border-bottom:2px solid var(--negro); white-space:nowrap; }
+.data-table td { padding:11px 12px; border-bottom:1px solid var(--linea); font-family:'IBM Plex Mono',monospace; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.data-table td:first-child, .data-table td:nth-child(2) { font-family:inherit; }
+.data-table tr:hover td { background:var(--naranja-pal); }
 </style>
 </head>
 <body>
@@ -372,6 +393,8 @@ footer b{color:var(--tinta)}
              queda oculta y sin render; la pestaña Campanas_ASINs del Sheet queda intacta. -->
         <button class="tab" data-target="campanas" style="display:none">Campañas</button>
         <button class="tab" data-target="acciones">Acciones</button>
+        <button class="tab" data-target="nature">Nature</button>
+        <button class="tab" data-target="referencias">Referencias</button>
       </div>
     </div>
     <div class="navgrp">
@@ -521,6 +544,24 @@ footer b{color:var(--tinta)}
       <div class="snote">Qué significa cada término, en lenguaje claro</div>
     </div>
     <div class="glos" id="glosario"></div>
+  </section>
+
+  <section class="panel" data-tab="nature">
+    <div class="section-header">
+      <h2>Campañas Nature <span class="badge-new">NUEVO</span></h2>
+      <p class="subtitle">Últimos 7 días · 9 campañas nuevas (08-sep) + 4 preexistentes (07-sep) · Stop-loss visible por campaña</p>
+    </div>
+    <div id="nature-table-wrap"></div>
+    <p class="note-atribucion">⏱ Ventana de atribución SP: 14 días. Campañas con &lt;3 días de vida muestran datos incompletos.</p>
+  </section>
+
+  <section class="panel" data-tab="referencias">
+    <div class="section-header">
+      <h2>Referencias con Stock</h2>
+      <p class="subtitle">Solo refes provechosas · Venta antes vs ahora · Gasto PPC · Stock disponible</p>
+    </div>
+    <div id="referencias-table-wrap"></div>
+    <p class="note-atribucion">⚠ Las 3 referencias rojas nunca aparecen en esta vista.</p>
   </section>
 
   <!-- Prime Day: panel retirado del nav (21-ago, pedido de Roger). Sin botón que lo active queda inaccesible.
@@ -1505,14 +1546,78 @@ function renderModelos(rows){
   el.querySelectorAll(".acc-h").forEach(h=>h.addEventListener("click",()=>h.parentElement.classList.toggle("open")));
 }
 
+/* ── Nature · campanas nuevas con stop-loss (hoja "Nature_Campanas") ─────
+   GUARDA DE ESQUEMA: mismo patron que dpValido(). Si la pestana no existe, gviz devuelve
+   la 1ra hoja del Sheet en vez de un 4xx. Las columnas de control se eligen SIN tilde a
+   proposito: la guarda no puede depender de como viaje "Campana" en el encabezado. */
+const NAT_COLS=["Grupo","Start_date","Dias_launch","Stop_KW_EUR","Estado"];
+const natValido = rows => Array.isArray(rows) && rows.length>0 && NAT_COLS.every(k=>k in rows[0]);
+const REF_COLS=["Refe","ASIN","Ventas_base_EUR","Ventas_ahora_EUR","Foco_activo"];
+const refValido = rows => Array.isArray(rows) && rows.length>0 && REF_COLS.every(k=>k in rows[0]);
+/* % con formato es-ES, igual que el resto del cuadro. Celda vacia => "—", nunca 0,0%. */
+const _pct1 = v => { const n=numES(v); return n==null ? "—" : n.toLocaleString("es-ES",{minimumFractionDigits:1,maximumFractionDigits:1})+"%"; };
+
+function renderNature(rows){
+  const wrap = document.getElementById("nature-table-wrap");
+  if(!wrap) return;
+  if(!rows || !rows.length){ wrap.innerHTML='<p class="empty-state">Sin datos — pegá los valores en la pestaña Nature_Campanas del Sheet.</p>'; return; }
+  const cols = ["Grupo","Campaña","Start_date","Dias_launch","Impresiones","Clicks","Gasto_EUR","Ventas_EUR","ACoS_pct","ROAS","Stop_KW_EUR","Stop_Modelo_EUR","Estado"];
+  const labels = ["Grupo","Campaña","Inicio","Días","Impr.","Clicks","Gasto €","Ventas €","ACoS %","ROAS","Stop KW €","Stop Modelo €","Estado"];
+  const EUR_COLS = ["Gasto_EUR","Ventas_EUR","Stop_KW_EUR","Stop_Modelo_EUR"];
+  let html = '<div style="overflow-x:auto"><table class="data-table"><thead><tr>' + labels.map(l=>`<th>${l}</th>`).join('') + '</tr></thead><tbody>';
+  rows.forEach(r => {
+    const grupo = (r["Grupo"]||"").trim();
+    /* Stop-loss: solo se pinta con AMBOS numeros presentes. Con `parseFloat(x)||0` un par
+       de celdas vacias daba 0>=0 y dejaba toda la tabla en rojo. */
+    const gasto = numES(r["Gasto_EUR"]), stopKW = numES(r["Stop_KW_EUR"]);
+    const stopClass = (gasto!=null && stopKW!=null && gasto>=stopKW) ? "stop-loss-alert" : "";
+    const grupoClass = /^nueva/i.test(grupo) ? "grupo-nueva" : "grupo-preexistente";
+    html += `<tr class="${stopClass}">`;
+    cols.forEach(c => {
+      let val = (r[c]!==undefined && String(r[c]).trim()!=="") ? r[c] : "—";
+      if(c==="Grupo")    val = `<span class="badge-grupo ${grupoClass}">${grupo||"—"}</span>`;
+      if(c==="ACoS_pct") val = _pct1(r[c]);
+      if(EUR_COLS.indexOf(c)>-1){ const n=numES(r[c]); val = n==null ? "—" : eur2(n); }
+      html += `<td>${val}</td>`;
+    });
+    html += "</tr>";
+  });
+  html += "</tbody></table></div>";
+  wrap.innerHTML = html;
+}
+
+function renderReferencias(rows){
+  const wrap = document.getElementById("referencias-table-wrap");
+  if(!wrap) return;
+  if(!rows || !rows.length){ wrap.innerHTML='<p class="empty-state">Sin datos — pegá los valores en la pestaña Referencias_Stock del Sheet.</p>'; return; }
+  const cols = ["Refe","ASIN","Ventas_base_EUR","Ventas_ahora_EUR","Delta_pct","Gasto_PPC_EUR","Stock_units","Foco_activo"];
+  const labels = ["Refe","ASIN","Ventas base €","Ventas ahora €","Δ%","Gasto PPC €","Stock (u)","Foco activo"];
+  const EUR_COLS = ["Ventas_base_EUR","Ventas_ahora_EUR","Gasto_PPC_EUR"];
+  let html = '<div style="overflow-x:auto"><table class="data-table"><thead><tr>' + labels.map(l=>`<th>${l}</th>`).join('') + '</tr></thead><tbody>';
+  rows.forEach(r => {
+    /* Delta ausente = sin color. Con `||0` un delta vacio se pintaba verde (0 >= 0). */
+    const delta = numES(r["Delta_pct"]);
+    html += "<tr>";
+    cols.forEach(c => {
+      let val = (r[c]!==undefined && String(r[c]).trim()!=="") ? r[c] : "—";
+      if(c==="Delta_pct") val = delta==null ? "—" : `<span class="${delta>=0?"delta-pos":"delta-neg"}">${_pct1(delta)}</span>`;
+      if(EUR_COLS.indexOf(c)>-1){ const n=numES(r[c]); val = n==null ? "—" : eur2(n); }
+      html += `<td>${val}</td>`;
+    });
+    html += "</tr>";
+  });
+  html += "</tbody></table></div>";
+  wrap.innerHTML = html;
+}
+
 /* ── Boot ── */
 async function boot(){
   let d = {...DATA};
   d.bitacora=[]; d.funnel=[]; d.precios=[]; d.modelos=[]; d.campanasView=DATA.campanas;
-  d.veredicto=[]; d.mom=[]; d.yoy=[]; d.ventanas=[]; d.embudo=[]; d.entrega=[];
+  d.veredicto=[]; d.mom=[]; d.yoy=[]; d.ventanas=[]; d.embudo=[]; d.entrega=[]; d.nature=[]; d.referencias=[];
   let mode="snapshot";
   if(SHEET_ID){
-    const names=["WoW_KPIs","Acciones_PPC","Bitacora","Funnel_Etapas","Veredicto","MoM_KPIs","YoY_Negocio","Modelos_Ventanas","Funnel","Delivery_Promise"];
+    const names=["WoW_KPIs","Acciones_PPC","Bitacora","Funnel_Etapas","Veredicto","MoM_KPIs","YoY_Negocio","Modelos_Ventanas","Funnel","Delivery_Promise","Nature_Campanas","Referencias_Stock"];
     const res=await Promise.allSettled(names.map(n=>fetchSheet(n)));
     const val=i=>res[i].status==="fulfilled"?res[i].value:null;
     /* OJO: "Funnel_Etapas" (índice 3) es la hoja vieja del tab Funnel oculto;
@@ -1523,7 +1628,7 @@ async function boot(){
          · "Modelos_WoW"     (27-ago)
          · "Precios_Impacto" (27-ago) — pestaña vacía; el tab Precios ya estaba disabled
          · "Campanas_ASINs"  (27-ago) — tab oculta por fuga de ASINs; no se descarga */
-    const wow=val(0),acc=val(1),bita=val(2),fun=val(3),ver=val(4),momS=val(5),yoyS=val(6),venS=val(7),embS=val(8),dpS=val(9);   // dpS: agregado al FINAL, no renumera lo anterior
+    const wow=val(0),acc=val(1),bita=val(2),fun=val(3),ver=val(4),momS=val(5),yoyS=val(6),venS=val(7),embS=val(8),dpS=val(9),natS=val(10),refS=val(11);   // dpS/natS/refS: agregados al FINAL, no renumeran lo anterior
     let ok=0; const total=names.length;
     if(wow&&wow.length){ d.wow=wow; ok++; }
     if(acc&&acc.length){ d.acciones=cleanRows(acc).map(r=>({fecha:r.Fecha,campana:r["Campaña"]||r.Campana,accion:r["Acción"]||r.Accion,detalle:r.Detalle,afecta:r.Producto_Afectado||r.Afecta||r["Afecta a"],estado:(r.Estado||"").trim(),analisis:r["Análisis"]||r.Analisis,ambito:r["Ambito"]||r["Ámbito"]})); ok++; }
@@ -1538,6 +1643,12 @@ async function boot(){
     /* dpValido() y no .length: si la pestaña no existe, gviz devuelve la 1ª hoja del Sheet
        (Campanas_ASINs) — no vacía, pero con otro esquema. No cuenta como cargada. */
     if(dpS&&dpValido(cleanRows(dpS))){ d.entrega=cleanRows(dpS); ok++; }
+    /* natValido()/refValido() y no .length, por la misma razon que dpS: si la pestana no
+       existe todavia en el Sheet, gviz devuelve la 1ra hoja (Campanas_ASINs) — no vacia,
+       pero con otro esquema. Sin la guarda el contador la daria por cargada y el render
+       dibujaria una tabla entera de guiones en vez del empty-state. */
+    if(natS&&natValido(cleanRows(natS))){ d.nature=cleanRows(natS); ok++; }
+    if(refS&&refValido(cleanRows(refS))){ d.referencias=cleanRows(refS); ok++; }
     mode = ok===0 ? "snapshot" : ok===total ? "live" : "parcial";
     if(res.some(r=>r.status==="rejected")) console.warn("Pestañas no cargadas:", res.map((r,i)=>r.status==="rejected"?names[i]:null).filter(Boolean).join(", "));
   }
@@ -1566,6 +1677,8 @@ async function boot(){
   renderPrecios(d.precios);
   renderFunnel(d.funnel);
   renderGlosario();
+  renderNature(d.nature);
+  renderReferencias(d.referencias);
 }
 boot();
 
