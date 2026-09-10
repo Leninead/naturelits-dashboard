@@ -573,7 +573,7 @@ footer b{color:var(--tinta)}
   <section class="panel" data-tab="referencias">
     <div class="section-header">
       <h2>Referencias con Stock</h2>
-      <p class="subtitle">Referencias con stock en foco PPC · Venta antes vs ahora · Gasto PPC · Stock disponible</p>
+      <p class="subtitle">Referencias con stock en foco PPC · Venta antes vs ahora · Gasto PPC</p>
     </div>
     <div id="referencias-table-wrap"></div>
 
@@ -1618,8 +1618,8 @@ function renderReferencias(rows){
   const wrap = document.getElementById("referencias-table-wrap");
   if(!wrap) return;
   if(!rows || !rows.length){ wrap.innerHTML='<p class="empty-state">Sin datos — pegá los valores en la pestaña Referencias_Stock del Sheet.</p>'; return; }
-  const cols = ["Refe","ASIN","Ventas_base_EUR","Ventas_ahora_EUR","Delta_pct","Gasto_PPC_EUR","Stock_units","Foco_activo"];
-  const labels = ["Refe","ASIN","Ventas base €","Ventas ahora €","Δ%","Gasto PPC €","Stock (u)","Foco activo"];
+  const cols = ["Refe","ASIN","Ventas_base_EUR","Ventas_ahora_EUR","Delta_pct","Gasto_PPC_EUR","Foco_activo"];
+  const labels = ["Refe","ASIN","Ventas base €","Ventas ahora €","Δ%","Gasto PPC €","Foco activo"];
   const EUR_COLS = ["Ventas_base_EUR","Ventas_ahora_EUR","Gasto_PPC_EUR"];
   let html = '<div style="overflow-x:auto"><table class="data-table"><thead><tr>' + labels.map(l=>`<th>${l}</th>`).join('') + '</tr></thead><tbody>';
   rows.forEach(r => {
