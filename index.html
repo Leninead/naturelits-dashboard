@@ -756,12 +756,18 @@ function setStatus(mode){
   else {d.className="dot local"; t.textContent="Datos locales · snapshot"}
 }
 function renderPeriodo(wow){
-  const last = wow[wow.length-1];
-  document.getElementById("periodo").textContent = "Semana "+last.Semana+" 2026";
+  const last = (wow&&wow.length) ? wow[wow.length-1] : null;   // d.wow puede venir [] o null desde la guarda
+  document.getElementById("periodo").textContent = last ? "Semana "+last.Semana+" 2026"
+                                                        : "Semana — · sin datos de la semana";
   const now = new Date().toLocaleDateString("es-ES",{day:"numeric",month:"long",year:"numeric"});
   document.getElementById("ftDate").innerHTML = "Generado el <b>"+now+"</b>";
 }
 function renderKPIs(wow){
+  if(!wow||!wow.length){   // guarda de WoW_KPIs: [] o null. Empty-state explícito, nunca datos viejos
+    document.getElementById("kpis").innerHTML = emptyState(
+      wow ? "Sin datos de la semana todavía" : "No se pudieron cargar los indicadores · revisa la pestaña WoW_KPIs (detalle en consola)");
+    return;
+  }
   const c=wow[wow.length-1], p=wow[wow.length-2]||c;
   const toN=v=>parseFloat(String(v).replace(/[€%\s]/g,"").replace(",","."))||0;
   const ppN=v=>{const n=toN0(v); return Math.abs(n)<=1?n*100:n;};   // % → puntos porcentuales (idéntico a Comparativa/Evolutivo)
@@ -793,6 +799,11 @@ function renderFam(fam){
   requestAnimationFrame(()=>document.querySelectorAll(".fbar").forEach(b=>b.style.width=b.dataset.w+"%"));
 }
 function renderBizKPIs(wow){
+  if(!wow||!wow.length){   // misma guarda que renderKPIs
+    document.getElementById("bizkpis").innerHTML = emptyState(
+      wow ? "Sin datos de la semana todavía" : "No se pudieron cargar los indicadores de negocio · revisa la pestaña WoW_KPIs");
+    return;
+  }
   const c=wow[wow.length-1],p=wow[wow.length-2]||c;
   const toN=v=>parseFloat(String(v).replace(/[€%\s]/g,"").replace(",","."))||0;
   const ppN=v=>{const n=toN(v); return Math.abs(n)<=1?n*100:n;};
@@ -1353,11 +1364,22 @@ function renderCamp(c){
       <td class="num hide-m">${eurGuard(x.inversion, sospechaMoneda(x._crudoInv, x.inversion, x._techo))}</td>
     </tr>`;}).join("");
 }
-/* semana Lun-Dom de una fecha ISO (YYYY-MM-DD) → {key: lunes ISO, label: "1-7 jun"} */
+/* semana Lun-Dom de una fecha → {key: lunes ISO, label: "1-7 jun"}.
+   Acepta ISO (YYYY-MM-DD) y dd/mm/yyyy. Acciones_PPC viaja en dd/mm/yyyy ("09/09/2026"):
+   con sólo el match ISO caía en null, y esas acciones quedaban sin semana — no aparecían
+   en el desplegable ni se podían filtrar. dd/mm se prueba PRIMERO y anclado (^…$) para no
+   morder los dígitos de una fecha ISO.
+   El ida y vuelta (getFullYear/getMonth/getDate) se valida porque new Date(2026,12,9) NO
+   falla: rueda en silencio a enero de 2027. Sin ese control, un mm/dd/yyyy mal etiquetado
+   devolvería una semana equivocada en vez de null, que es peor que no devolver nada. */
 function weekOf(fechaStr){
-  const m=String(fechaStr||"").match(/(\d{4})-(\d{2})-(\d{2})/);
-  if(!m) return null;
-  const d=new Date(+m[1], +m[2]-1, +m[3]); if(isNaN(d.getTime())) return null;
+  const s=String(fechaStr||"").trim();
+  let y, mo, da;
+  const dmy=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(dmy){ da=+dmy[1]; mo=+dmy[2]; y=+dmy[3]; }
+  else { const m=s.match(/(\d{4})-(\d{2})-(\d{2})/); if(!m) return null; y=+m[1]; mo=+m[2]; da=+m[3]; }
+  const d=new Date(y, mo-1, da);
+  if(isNaN(d.getTime())||d.getFullYear()!==y||d.getMonth()!==mo-1||d.getDate()!==da) return null;
   const off=(d.getDay()+6)%7;                                   // 0=lunes
   const mon=new Date(d); mon.setDate(d.getDate()-off);
   const sun=new Date(mon); sun.setDate(mon.getDate()+6);
@@ -1582,6 +1604,13 @@ const refValido = rows => Array.isArray(rows) && rows.length>0 && REF_COLS.every
    claves salen con el valor de la 1ra fila de datos; la guarda falla y se ve el empty-state. */
 const ACC_REF_COLS=["Refe","Accion"];
 const accRefValido = rows => Array.isArray(rows) && rows.length>0 && ACC_REF_COLS.every(k=>k in rows[0]);
+
+/* Modelos_Ventanas (tabla por familia). Mismo patrón de guarda. Exige lo que
+   renderFamVentanas realmente necesita: Familia, Lectura y AL MENOS DOS columnas ^Ventas_
+   (las ventanas se autodetectan por prefijo, así que no se pueden nombrar aquí). */
+const VEN_COLS=["Familia","Lectura"];
+const venValido = rows => Array.isArray(rows) && rows.length>0 && VEN_COLS.every(k=>k in rows[0])
+  && Object.keys(rows[0]).filter(k=>/^Ventas_/i.test(k)).length>=2;
 /* % con formato es-ES, igual que el resto del cuadro. Celda vacia => "—", nunca 0,0%. */
 const _pct1 = v => { const n=numES(v); return n==null ? "—" : n.toLocaleString("es-ES",{minimumFractionDigits:1,maximumFractionDigits:1})+"%"; };
 
@@ -1707,7 +1736,12 @@ async function boot(){
          · "Campanas_ASINs"  (27-ago) — tab oculta por fuga de ASINs; no se descarga */
     const wow=val(0),acc=val(1),bita=val(2),fun=val(3),ver=val(4),momS=val(5),yoyS=val(6),venS=val(7),embS=val(8),dpS=val(9),natS=val(10),refS=val(11),accS=val(12);   // dpS/natS/refS/accS: agregados al FINAL, no renumeran lo anterior
     let ok=0; const total=names.length;
+    /* GUARDA, misma razón que la de acciones de abajo: sin este else, un fetch caído o una
+       hoja vacía dejaban d.wow con el snapshot hardcodeado — "18-24 may" / "25-31 may" se
+       mostraban como dato vivo, con semanas que no existen en el Sheet.
+       [] = respondió sin filas · null = fallo. Los cuatro render de wow lo toleran. */
     if(wow&&wow.length){ d.wow=wow; ok++; }
+    else d.wow = wow ? [] : null;
     if(acc&&acc.length){ d.acciones=cleanRows(acc).map(r=>({fecha:r.Fecha,campana:r["Campaña"]||r.Campana,accion:r["Acción"]||r.Accion,detalle:r.Detalle,afecta:r.Producto_Afectado||r.Afecta||r["Afecta a"],estado:(r.Estado||"").trim(),analisis:r["Análisis"]||r.Analisis,ambito:r["Ambito"]||r["Ámbito"]})); ok++; }
     else d.acciones = acc ? [] : null;   // GUARDA: [] = respondio sin filas · null = fallo. NUNCA dejar el snapshot de junio pasando por dato vivo.
     if(bita&&bita.length){ d.bitacora=bita; ok++; }
@@ -1715,7 +1749,11 @@ async function boot(){
     if(ver&&ver.length){ d.veredicto=cleanRows(ver); ok++; }
     if(momS&&momS.length){ d.mom=cleanRows(momS); ok++; }
     if(yoyS&&yoyS.length){ d.yoy=cleanRows(yoyS); ok++; }
-    if(venS&&venS.length){ d.ventanas=cleanRows(venS); ok++; }
+    /* venValido() y no .length, misma razón que dpS/natS/refS: si la pestaña no existe, gviz
+       devuelve la 1ª hoja del Sheet — no vacía, pero con otro esquema — y el contador la daba
+       por cargada, dejando el badge en "live" con la hoja equivocada. */
+    if(venS&&venValido(cleanRows(venS))){ d.ventanas=cleanRows(venS); ok++; }
+    else d.ventanas=[];
     if(embS&&embS.length){ d.embudo=cleanRows(embS); ok++; }
     /* dpValido() y no .length: si la pestaña no existe, gviz devuelve la 1ª hoja del Sheet
        (Campanas_ASINs) — no vacía, pero con otro esquema. No cuenta como cargada. */
