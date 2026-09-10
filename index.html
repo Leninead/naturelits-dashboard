@@ -1595,7 +1595,7 @@ function renderModelos(rows){
    proposito: la guarda no puede depender de como viaje "Campana" en el encabezado. */
 const NAT_COLS=["Grupo","Start_date","Dias_launch","Stop_KW_EUR","Estado"];
 const natValido = rows => Array.isArray(rows) && rows.length>0 && NAT_COLS.every(k=>k in rows[0]);
-const REF_COLS=["Refe","ASIN","Ventas_base_EUR","Ventas_ahora_EUR","Foco_activo"];
+const REF_COLS=["Refe","ASIN","Ventas_base_1-7sep","Ventas_ahora_7d","Foco_activo"];
 const refValido = rows => Array.isArray(rows) && rows.length>0 && REF_COLS.every(k=>k in rows[0]);
 
 /* Acciones por referencia (hoja "Acciones_Referencias"). Mismo patron de guarda: se exigen
@@ -1647,9 +1647,12 @@ function renderReferencias(rows){
   const wrap = document.getElementById("referencias-table-wrap");
   if(!wrap) return;
   if(!rows || !rows.length){ wrap.innerHTML='<p class="empty-state">Sin datos — pegá los valores en la pestaña Referencias_Stock del Sheet.</p>'; return; }
-  const cols = ["Refe","ASIN","Ventas_base_EUR","Ventas_ahora_EUR","Delta_pct","Gasto_PPC_EUR","Foco_activo"];
+  /* Los nombres tienen que ser los de la fila 1 del Sheet, no los que nos gustaría que
+     fueran: con los viejos (*_EUR) la tabla salía en guiones. Las etiquetas visibles siguen
+     llevando el € — el encabezado del Sheet no es lo que ve el cliente. */
+  const cols = ["Refe","ASIN","Ventas_base_1-7sep","Ventas_ahora_7d","Delta_pct","Gasto_PPC_7d","Foco_activo"];
   const labels = ["Refe","ASIN","Ventas base €","Ventas ahora €","Δ%","Gasto PPC €","Foco activo"];
-  const EUR_COLS = ["Ventas_base_EUR","Ventas_ahora_EUR","Gasto_PPC_EUR"];
+  const EUR_COLS = ["Ventas_base_1-7sep","Ventas_ahora_7d","Gasto_PPC_7d"];
   let html = '<div style="overflow-x:auto"><table class="data-table"><thead><tr>' + labels.map(l=>`<th>${l}</th>`).join('') + '</tr></thead><tbody>';
   rows.forEach(r => {
     /* Delta ausente = sin color. Con `||0` un delta vacio se pintaba verde (0 >= 0). */
