@@ -288,7 +288,13 @@ footer b{color:var(--tinta)}
         display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap}
 .emb-lv1{width:100%;  background:var(--naranja-2)}
 .emb-lv2{width:62%;   background:var(--naranja)}
-.emb-lv3{width:34%;   background:#1d5a48}
+/* Conversion apila y centra: a 34 % de ancho el label a la izquierda y el número a la
+   derecha quedan pegados a los bordes con un hueco en el medio. Sólo este nivel — lv1 y lv2
+   son anchos y se leen bien en dos columnas. El centrado del número se hace sobre .emb-nums,
+   que es quien trae el text-align:right heredado por .emb-big y .emb-prev. */
+.emb-lv3{width:34%;   background:#1d5a48;
+         flex-direction:column; align-items:center; text-align:center; gap:6px}
+.emb-lv3 .emb-nums{text-align:center}
 /* Subfase sin fuente todavia: bloque del flujo pero en hueco, para que se lea como etapa
    pendiente y no como etapa con valor cero. El ancho NO va aca: lo pone cada llamada segun
    donde cae en el recorrido (carrito 48 %, fidelizacion 20 %). */
