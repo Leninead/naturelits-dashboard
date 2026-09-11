@@ -1698,8 +1698,12 @@ function renderReferencias(rows){
   /* Los nombres tienen que ser los de la fila 1 del Sheet, no los que nos gustaría que
      fueran: con los viejos (*_EUR) la tabla salía en guiones. Las etiquetas visibles siguen
      llevando el € — el encabezado del Sheet no es lo que ve el cliente. */
-  const cols = ["Refe","ASIN","Ventas_base_1-7sep","Ventas_ahora_7d","Delta_pct","Gasto_PPC_7d","Foco_activo"];
-  const labels = ["Refe","ASIN","Ventas base €","Ventas ahora €","Δ%","Gasto PPC €","Foco activo"];
+  /* Fecha_push y DP_inicio todavía NO están en el Sheet: van aquí, en la lista de lo que se
+     DIBUJA, y NO en REF_COLS, que es la guarda de esquema. Metidas en REF_COLS, refValido()
+     las exigiría a la hoja y el módulo entero caería al empty-state — el mismo fallo que
+     tuvieron los nombres *_EUR. Sin dato, el fallback de abajo las deja en "—". */
+  const cols = ["Refe","ASIN","Ventas_base_1-7sep","Ventas_ahora_7d","Delta_pct","Gasto_PPC_7d","Foco_activo","Fecha_push","DP_inicio"];
+  const labels = ["Refe","ASIN","Ventas base €","Ventas ahora €","Δ%","Gasto PPC €","Foco activo","Inicio push","DP al inicio"];
   const EUR_COLS = ["Ventas_base_1-7sep","Ventas_ahora_7d","Gasto_PPC_7d"];
   let html = '<div style="overflow-x:auto"><table class="data-table"><thead><tr>' + labels.map(l=>`<th>${l}</th>`).join('') + '</tr></thead><tbody>';
   rows.forEach(r => {
