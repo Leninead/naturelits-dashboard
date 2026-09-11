@@ -295,10 +295,11 @@ footer b{color:var(--tinta)}
 .emb-lv-pend{width:48%; background:var(--naranja-pal); color:var(--gris);
              border:1px dashed var(--naranja-bd)}
 .emb-lv-pend .emb-lab{color:var(--negro)}
-/* Etiqueta de fase sobre cada bloque. Hereda el tono de .emb-tag, que estaba atado al paso
-   en alerta, pero centrada sobre la barra y sin depender de ese contexto. */
+/* Etiqueta de fase sobre cada bloque. Centrada sobre la barra, con el ancho de la barra.
+   Iba en --gris (#7d8580): sobre el papel daba 3,63:1, por debajo del 4,5:1 que pide un
+   texto de 10 px. En --tinta queda en 13,1:1 y se lee sin esfuerzo. */
 .emb-fase{font-size:.63rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
-          color:var(--gris); margin:0 auto 4px; text-align:center}
+          color:var(--tinta); margin:0 auto 4px; text-align:center}
 /* Encabezado de cada recorrido: los dos embudos viven en el mismo tab y sin titulo se leen
    como uno solo de seis bloques. */
 .emb-sub{max-width:760px; margin:0 auto 8px; font-size:.95rem; font-weight:700;
