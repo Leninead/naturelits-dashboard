@@ -1152,15 +1152,33 @@ function renderEmbudo(rows){
       ${txt?`<div class="emb-call-txt">${txt}</div>`:""}
       </div>`;
   }).join("");
-  /* Anuncio del embudo de negocio completo (organico + pagado). Solo placeholder: el embudo
-     de arriba es unicamente el recorrido publicitario, y no hay dato de organico en el Sheet.
-     Mismo estilo que los callouts pendientes; ocupa las dos columnas porque es un anuncio,
-     no una tercera metrica. */
-  const proxHTML=`<div class="emb-call emb-call-pend emb-call-wide">
-    <div class="emb-call-tit"><span>🧭</span>Embudo de negocio completo</div>
-    <div><span class="emb-call-badge">Próximamente</span></div>
-    <div class="emb-call-txt">Al recorrido publicitario que ves arriba se sumará el de las ventas orgánicas, para tener el embudo completo del negocio: cuánta gente llega por búsqueda natural y cuánta por publicidad, y en qué punto se pierde la venta en cada camino.</div>
-    </div>`;
+  /* Embudo de negocio completo. Antes era un placeholder fijo que prometía separar orgánico
+     de pagado; ese dato NO EXISTE en ningún reporte del pull —Amazon no informa sesiones por
+     origen, y los clics no son sesiones ni se pueden restar de ellas— así que la promesa no
+     tenía fecha posible. Ahora se dibuja el recorrido del negocio COMPLETO, sin separar
+     origen, en cuanto la hoja Funnel traiga las etapas "sesiones" y "pedidos negocio".
+     Se LEE del Sheet, no se hardcodea: las cifras cambian cada semana y un número fijo aquí
+     se convierte en dato viejo disfrazado de vivo al jueves siguiente.
+     Ocupa las dos columnas porque es un recorrido, no una tercera métrica. */
+  const negHTML=(()=>{
+    const ses=get("sesiones"), ped=get("pedidos negocio");
+    const iC=v(ver,A), sC=v(ses,A), pC=v(ped,A);
+    const iP=v(ver,P), sP=v(ses,P), pP=v(ped,P);
+    if(sC==null||pC==null){        // sin las dos etapas no hay recorrido: pendiente honesto
+      return `<div class="emb-call emb-call-pend emb-call-wide">
+        <div class="emb-call-tit"><span>🧭</span>Embudo de negocio completo</div>
+        <div><span class="emb-call-badge">En análisis</span></div>
+        <div class="emb-call-txt">Estamos sumando al recorrido publicitario las visitas y los pedidos del negocio completo, para ver el camino entero y no sólo el de los anuncios.</div>
+        </div>`;
+    }
+    const tasa=(a,b)=>(a&&b!=null)?b/a:null;
+    const dS=embDelta(sC,sP,false), dP=embDelta(pC,pP,false);
+    return `<div class="emb-call emb-call-wide">
+      <div class="emb-call-tit"><span>🧭</span>Embudo de negocio completo</div>
+      <div class="emb-call-num">${_embMil(iC)} → ${_embMil(sC)} <span class="emb-call-d ${dS.cls}">${dS.txt}</span> → ${_embMil(pC)} <span class="emb-call-d ${dP.cls}">${dP.txt}</span></div>
+      <div class="emb-call-txt">Nos ven → Entran al producto: ${_porMil(tasa(iC,sC))} de cada 1.000 · Entran → Compran: ${_porMil(tasa(sC,pC))} de cada 1.000. Las veces que se mostró un anuncio cuentan sólo publicidad, mientras que las visitas y los pedidos incluyen todo el negocio, también lo que llega sin anuncio: por eso el primer salto marca el tamaño del alcance, no la eficiencia.</div>
+      </div>`;
+  })();
   /* La nota de los 90 días describe el NÚMERO del carrito: sin número no aplica.
      Antes colgaba de callHTML, que ahora nunca está vacío. */
   const _carritoConDato=(()=>{const r=get("carrito abandonado");return !!(r&&v(r,A)!=null);})();
@@ -1173,7 +1191,7 @@ function renderEmbudo(rows){
       ${paso(niveles[1],niveles[2],true)}
       ${barra(niveles[2])}
     </div>
-    <div class="emb-calls">${callHTML}${proxHTML}</div>
+    <div class="emb-calls">${callHTML}${negHTML}</div>
     <div class="pricefoot">Embudo del recorrido publicitario · ${_ventanas}.${_carritoConDato?" El carrito abandonado corresponde a los últimos 90 días.":""}</div>`;
 }
 function renderFamVentanas(rows, wow){
