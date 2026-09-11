@@ -1206,6 +1206,14 @@ function renderEmbudo(rows){
         ${barra(nv[2])}
       </div></div>`;
   })();
+  /* Recurrencia y valor de vida: sin fuente todavía. Va como tarjeta pendiente DEBAJO de los
+     dos recorridos, no como etapa de la pirámide: no es un paso del embudo, es lo que pasa
+     DESPUÉS de la compra. Comparte el estilo "En análisis" con el resto de lo pendiente. */
+  const ltvHTML=`<div class="emb-call emb-call-pend emb-call-wide">
+    <div class="emb-call-tit"><span>🔁</span>Recurrencia de compra · Lifetime value</div>
+    <div><span class="emb-call-badge">En análisis</span></div>
+    <div class="emb-call-txt">Estamos incorporando el seguimiento de clientes recurrentes y el valor de vida del cliente.</div>
+    </div>`;
   const guia="Se lee de arriba (los que nos ven) hacia abajo (los que compran). Cada nivel más angosto = menos gente llega; el salto más grande marca dónde se pierde la venta.";
   el.innerHTML=`<h3 class="emb-sub"><span>📣</span>Embudo publicitario</h3>
     <div class="emb-guia">${guia}</div>
@@ -1218,7 +1226,7 @@ function renderEmbudo(rows){
       ${barra(niveles[2])}
     </div>
     ${negHTML}
-    <div class="emb-calls">${callHTML}</div>
+    <div class="emb-calls">${callHTML}${ltvHTML}</div>
     <div class="pricefoot">Embudo del recorrido publicitario · ${_ventanas}.</div>`;
 }
 function renderFamVentanas(rows, wow){
