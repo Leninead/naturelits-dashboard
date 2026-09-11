@@ -288,9 +288,6 @@ footer b{color:var(--tinta)}
         display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap}
 .emb-lv1{width:100%;  background:var(--naranja-2)}
 .emb-lv2{width:62%;   background:var(--naranja)}
-/* Escalón intermedio (Vistas de ficha, sólo en el recorrido de negocio): entre el 62 % de
-   Visitas totales y el 48 % del carrito. Mismo tono que su vecino de arriba. */
-.emb-lv2b{width:55%;  background:var(--naranja)}
 .emb-lv3{width:34%;   background:#1d5a48}
 /* Subfase sin fuente todavia: bloque del flujo pero en hueco, para que se lea como etapa
    pendiente y no como etapa con valor cero. El ancho NO va aca: lo pone cada llamada segun
@@ -1151,19 +1148,9 @@ function renderEmbudo(rows){
       <span class="emb-antes">antes ${_porMil(rp)} de cada 1.000</span>
     </div>`;
   };
-  /* Tasa cuando el paso NO es un estrechamiento sino un multiplicador: vistas de ficha por
-     visita es > 1 (una visita ve varias fichas), asi que "de cada 1.000" no aplica y se
-     muestra con un decimal. Sin dato actual no se dibuja el renglon. */
-  const pasoRatio=(a,b,unidad)=>{
-    const rc=(a.cur&&b.cur!=null)?b.cur/a.cur:null;
-    if(rc==null) return "";
-    const rp=(a.prev&&b.prev!=null)?b.prev/a.prev:null;
-    const f1=x=>x==null?"—":x.toLocaleString("es-ES",{minimumFractionDigits:1,maximumFractionDigits:1});
-    return `<div class="emb-step">
-      <b>${a.lab} → ${b.lab}:</b> ${f1(rc)} ${unidad}
-      <span class="emb-antes">antes ${f1(rp)} ${unidad}</span>
-    </div>`;
-  };
+  /* un decimal en es-ES, para las magnitudes que no son un estrechamiento sino un
+     multiplicador (vistas por visita es > 1: una visita ve varias fichas) */
+  const _f1=x=>x==null?"—":x.toLocaleString("es-ES",{minimumFractionDigits:1,maximumFractionDigits:1});
   /* El bloque de tarjetas sueltas bajo los recorridos ya no existe. "Carrito abandonado"
      salio primero —el carrito es una subfase DENTRO de los dos flujos— y ahora sale
      "Vistas de ficha", que pasa a ser un nivel del recorrido de negocio en vez de una
@@ -1184,15 +1171,20 @@ function renderEmbudo(rows){
     const nv=[
       {cls:"emb-lv1",  ico:"📣", lab:"Alcance publicitario", cur:v(ver,A), prev:v(ver,P), fase:"Awareness",     ancho:"100%"},
       {cls:"emb-lv2",  ico:"👣", lab:"Visitas totales",      cur:v(ses,A), prev:v(ses,P), fase:"Consideration", ancho:"62%"},
-      {cls:"emb-lv2b", ico:"📄", lab:"Vistas de ficha",      cur:v(vis,A), prev:v(vis,P),                       ancho:"55%"},
+      {               ico:"📄", lab:"Vistas de ficha",      cur:v(vis,A), prev:v(vis,P)},
       {cls:"emb-lv3",  ico:"📦", lab:"Pedidos negocio",      cur:v(ped,A), prev:v(ped,P), fase:"Conversion",    ancho:"34%"}
     ];
-    /* Vistas de ficha NO bloquea el recorrido: si la fila no está en la hoja o viene vacía,
-       el nivel se dibuja igual con la insignia "Sin dato esta semana" y sin renglón de ratio.
-       Es el único nivel opcional; los otros tres sí condicionan el render. */
-    const VIS = nv[2].cur!=null
-      ? `${barra(nv[2])}<div class="emb-gap"></div>${pasoRatio(nv[1],nv[2],"por visita")}`
-      : `${barraPend("Vistas de ficha","","55%","📄","Sin dato esta semana")}<div class="emb-gap"></div>`;
+    /* Vistas de ficha va SIEMPRE como fila horizontal, nunca como barra de la pirámide: su
+       valor supera a Visitas totales —una visita ve varias fichas— y dibujarlo como escalón
+       más angosto con un número mayor contaba un estrechamiento que no ocurre.
+       Al 100 % como Loyalty: a 48 %, el ancho del carrito, el badge compuesto no entra en
+       una línea y envuelve. Tampoco bloquea el recorrido: sin dato va "Pendiente". */
+    const _vRatio = (nv[2].cur!=null && nv[1].cur) ? nv[2].cur/nv[1].cur : null;
+    const VIS = `${barraPend("Vistas de ficha","","100%","📄",
+        nv[2].cur==null ? "Pendiente"
+      : _vRatio==null   ? `${_embMil(nv[2].cur)} vistas`
+                        : `${_embMil(nv[2].cur)} vistas · ${_f1(_vRatio)} por visita`
+      )}<div class="emb-gap"></div>`;
     if(nv[1].cur==null||nv[3].cur==null){   // sesiones y pedidos; vistas de ficha es opcional
       return `<div class="emb-call emb-call-pend emb-call-wide">
         <div class="emb-call-tit"><span>🧭</span>Embudo de negocio completo</div>
