@@ -289,6 +289,21 @@ footer b{color:var(--tinta)}
 .emb-lv1{width:100%;  background:var(--naranja-2)}
 .emb-lv2{width:62%;   background:var(--naranja)}
 .emb-lv3{width:34%;   background:#1d5a48}
+/* Subfase sin fuente todavia: mismo ancho de flujo pero en hueco, para que se lea como
+   etapa pendiente y no como etapa con valor cero. Ancho entre el 62 % de Entran y el 34 %
+   de Compran, que es donde cae en el recorrido. */
+.emb-lv-pend{width:48%; background:var(--naranja-pal); color:var(--gris);
+             border:1px dashed var(--naranja-bd)}
+.emb-lv-pend .emb-lab{color:var(--negro)}
+/* Etiqueta de fase sobre cada bloque. Hereda el tono de .emb-tag, que estaba atado al paso
+   en alerta, pero centrada sobre la barra y sin depender de ese contexto. */
+.emb-fase{font-size:.63rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+          color:var(--gris); margin:0 auto 4px; text-align:center}
+/* Encabezado de cada recorrido: los dos embudos viven en el mismo tab y sin titulo se leen
+   como uno solo de seis bloques. */
+.emb-sub{max-width:760px; margin:0 auto 8px; font-size:.95rem; font-weight:700;
+         color:var(--negro); display:flex; align-items:center; gap:8px; justify-content:center}
+.emb-neg{margin-top:34px; padding-top:26px; border-top:1px solid var(--linea)}
 .emb-gap{height:2px}
 .emb-lab{font-size:.9rem; font-weight:600; letter-spacing:.01em; display:flex; align-items:center; gap:8px}
 .emb-nums{text-align:right; line-height:1.25}
@@ -1082,19 +1097,29 @@ function renderEmbudo(rows){
   const _sn=document.querySelector('[data-tab="embudo"] .snote');
   if(_sn) _sn.textContent=`De cuánta gente nos ve a cuánta compra · ${_ventanas}`;
   const niveles=[
-    {cls:"emb-lv1", ico:"👁️", lab:"Nos ven",  cur:v(ver,A), prev:v(ver,P)},
-    {cls:"emb-lv2", ico:"🖱️", lab:"Entran",   cur:v(ent,A), prev:v(ent,P)},
-    {cls:"emb-lv3", ico:"🛒", lab:"Compran",  cur:v(com,A), prev:v(com,P)}
+    {cls:"emb-lv1", ico:"👁️", lab:"Nos ven",  cur:v(ver,A), prev:v(ver,P), fase:"Alcance",    ancho:"100%"},
+    {cls:"emb-lv2", ico:"🖱️", lab:"Entran",   cur:v(ent,A), prev:v(ent,P), fase:"Interés",    ancho:"62%"},
+    {cls:"emb-lv3", ico:"🛒", lab:"Compran",  cur:v(com,A), prev:v(com,P), fase:"Conversión", ancho:"34%"}
   ];
   const barra=n=>{
     const d=embDelta(n.cur,n.prev,false);
-    return `<div class="emb-lv ${n.cls}">
+    const fase=n.fase?`<div class="emb-fase" style="width:${n.ancho||"100%"}">${n.fase}</div>`:"";
+    return `${fase}<div class="emb-lv ${n.cls}">
       <div class="emb-lab"><span>${n.ico}</span>${n.lab}</div>
       <div class="emb-nums">
         <div class="emb-big">${_embMil(n.cur)}</div>
         <div class="emb-prev">antes ${_embMil(n.prev)} · <span class="emb-d ${d.cls}">${d.txt}</span></div>
       </div></div>`;
   };
+  /* Subfase sin fuente: mismo bloque de flujo, pero con la insignia "En análisis" donde iría
+     el número. NO se dibuja con valor 0 — no tenemos el dato, que es distinto de tenerlo en
+     cero — y no corta la tasa de paso de sus vecinos: el salto Entran → Compran se sigue
+     calculando directo, porque es el que marca dónde se pierde la venta. */
+  const barraPend=(lab,fase)=>`${fase?`<div class="emb-fase" style="width:48%">${fase}</div>`:""}
+    <div class="emb-lv emb-lv-pend">
+      <div class="emb-lab"><span>🛒</span>${lab}</div>
+      <div class="emb-nums"><span class="emb-call-badge">En análisis</span></div>
+    </div>`;
   /* tasa de paso entre dos niveles */
   const paso=(a,b,alerta)=>{
     const rc=(a.cur&&b.cur!=null)?b.cur/a.cur:null;
@@ -1116,12 +1141,14 @@ function renderEmbudo(rows){
 
      Un callout con celda actual vacía NO se oculta: se dibuja "En análisis". Ocultarlo hacía
      desaparecer el carrito del informe, y es una línea de trabajo en curso, no un hueco. */
+  /* "Carrito abandonado" salio de aca: el carrito pasa a ser una subfase DENTRO de los dos
+     recorridos, y tenerlo ademas como tarjeta suelta lo repetia tres veces en la misma
+     pantalla. Si algun dia llega el dato de abandono —que NO es lo mismo que el de anadidos
+     al carrito— vuelve como tarjeta, no como etapa. */
   const calls=[
-    {ico:"🛒❌", icoPend:"🛒", tit:"Carrito abandonado", key:"carrito abandonado", alerta:true},
     {ico:"📄", tit:"Vistas de ficha", key:"vistas de ficha", alerta:false}
   ];
   const CALL_PEND={
-    "carrito abandonado":"Estamos activando una medición avanzada para ver cuánta gente añade al carrito sin comprar y diseñar la estrategia de recuperación.",
     "vistas de ficha":"Estamos incorporando esta medición para seguir cuánta gente llega a ver la ficha del producto."
   };
   /* texto del Sheet si la hoja gana una columna de prosa; tolera varios nombres */
@@ -1155,37 +1182,44 @@ function renderEmbudo(rows){
      Ocupa las dos columnas porque es un recorrido, no una tercera métrica. */
   const negHTML=(()=>{
     const ses=get("sesiones"), ped=get("pedidos negocio");
-    const iC=v(ver,A), sC=v(ses,A), pC=v(ped,A);
-    const iP=v(ver,P), sP=v(ses,P), pP=v(ped,P);
-    if(sC==null||pC==null){        // sin las dos etapas no hay recorrido: pendiente honesto
+    const nv=[
+      {cls:"emb-lv1", ico:"📣", lab:"Alcance publicitario", cur:v(ver,A), prev:v(ver,P), fase:"Alcance",    ancho:"100%"},
+      {cls:"emb-lv2", ico:"👣", lab:"Visitas totales",      cur:v(ses,A), prev:v(ses,P), fase:"Interés",    ancho:"62%"},
+      {cls:"emb-lv3", ico:"📦", lab:"Pedidos negocio",      cur:v(ped,A), prev:v(ped,P), fase:"Conversión", ancho:"34%"}
+    ];
+    if(nv[1].cur==null||nv[2].cur==null){   // sin las dos etapas no hay recorrido: pendiente honesto
       return `<div class="emb-call emb-call-pend emb-call-wide">
         <div class="emb-call-tit"><span>🧭</span>Embudo de negocio completo</div>
         <div><span class="emb-call-badge">En análisis</span></div>
         <div class="emb-call-txt">Estamos sumando al recorrido publicitario las visitas y los pedidos del negocio completo, para ver el camino entero y no sólo el de los anuncios.</div>
         </div>`;
     }
-    const tasa=(a,b)=>(a&&b!=null)?b/a:null;
-    const dS=embDelta(sC,sP,false), dP=embDelta(pC,pP,false);
-    return `<div class="emb-call emb-call-wide">
-      <div class="emb-call-tit"><span>🧭</span>Embudo de negocio completo</div>
-      <div class="emb-call-num">${_embMil(iC)} → ${_embMil(sC)} <span class="emb-call-d ${dS.cls}">${dS.txt}</span> → ${_embMil(pC)} <span class="emb-call-d ${dP.cls}">${dP.txt}</span></div>
-      <div class="emb-call-txt">Nos ven → Entran al producto: ${_porMil(tasa(iC,sC))} de cada 1.000 · Entran → Compran: ${_porMil(tasa(sC,pC))} de cada 1.000. Las veces que se mostró un anuncio cuentan sólo publicidad, mientras que las visitas y los pedidos incluyen todo el negocio, también lo que llega sin anuncio: por eso el primer salto marca el tamaño del alcance, no la eficiencia.</div>
-      </div>`;
+    return `<div class="emb-neg">
+      <h3 class="emb-sub"><span>🧭</span>Embudo de negocio completo</h3>
+      <div class="emb-guia">Mismo recorrido, pero de todo el negocio: incluye a quien llega sin haber visto un anuncio. El primer bloque cuenta sólo publicidad, así que ese primer salto mide el tamaño del alcance, no la eficiencia.</div>
+      <div class="emb-wrap">
+        ${barra(nv[0])}<div class="emb-gap"></div>
+        ${paso(nv[0],nv[1],false)}
+        ${barra(nv[1])}<div class="emb-gap"></div>
+        ${barraPend("Añaden al carrito","")}<div class="emb-gap"></div>
+        ${paso(nv[1],nv[2],true)}
+        ${barra(nv[2])}
+      </div></div>`;
   })();
-  /* La nota de los 90 días describe el NÚMERO del carrito: sin número no aplica.
-     Antes colgaba de callHTML, que ahora nunca está vacío. */
-  const _carritoConDato=(()=>{const r=get("carrito abandonado");return !!(r&&v(r,A)!=null);})();
   const guia="Se lee de arriba (los que nos ven) hacia abajo (los que compran). Cada nivel más angosto = menos gente llega; el salto más grande marca dónde se pierde la venta.";
-  el.innerHTML=`<div class="emb-guia">${guia}</div>
+  el.innerHTML=`<h3 class="emb-sub"><span>📣</span>Embudo publicitario</h3>
+    <div class="emb-guia">${guia}</div>
     <div class="emb-wrap">
       ${barra(niveles[0])}<div class="emb-gap"></div>
       ${paso(niveles[0],niveles[1],false)}
       ${barra(niveles[1])}<div class="emb-gap"></div>
+      ${barraPend("Añaden al carrito","")}<div class="emb-gap"></div>
       ${paso(niveles[1],niveles[2],true)}
       ${barra(niveles[2])}
     </div>
-    <div class="emb-calls">${callHTML}${negHTML}</div>
-    <div class="pricefoot">Embudo del recorrido publicitario · ${_ventanas}.${_carritoConDato?" El carrito abandonado corresponde a los últimos 90 días.":""}</div>`;
+    ${negHTML}
+    <div class="emb-calls">${callHTML}</div>
+    <div class="pricefoot">Embudo del recorrido publicitario · ${_ventanas}.</div>`;
 }
 function renderFamVentanas(rows, wow){
   const el=document.getElementById("famVentanas");
