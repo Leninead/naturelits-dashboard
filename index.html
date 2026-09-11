@@ -1678,6 +1678,12 @@ function renderReferencias(rows){
     html += "</tr>";
   });
   html += "</tbody></table></div>";
+  /* Pie de tabla: define las tres columnas que se leen mal sin explicación. Va DENTRO del
+     html y no en el markup estático, para que no quede colgando bajo el empty-state cuando
+     la pestaña no trae filas. */
+  html += '<div class="pricefoot">Ventas base € = ventas de la semana 1-7 sep (antes del push). '
+        + 'Ventas ahora € = acumulado desde el 10-sep, se consolida cada viernes. '
+        + 'Foco activo = Activo (campaña dedicada activa) / Cobertura (solo automática).</div>';
   wrap.innerHTML = html;
 }
 
