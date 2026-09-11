@@ -426,6 +426,7 @@ footer b{color:var(--tinta)}
         <button class="tab" data-target="acciones">Acciones</button>
         <button class="tab" data-target="nature">Nature</button>
         <button class="tab" data-target="referencias">Referencias</button>
+        <button class="tab" data-target="dppush">DP × Push</button>
       </div>
     </div>
     <div class="navgrp">
@@ -599,6 +600,14 @@ footer b{color:var(--tinta)}
       <div id="acciones-ref-wrap"></div>
     </div>
     <p class="note-atribucion">⚠ Las 3 referencias rojas nunca aparecen en esta vista.</p>
+  </section>
+
+  <section class="panel" data-tab="dppush">
+    <div class="section-header">
+      <h2>Cruce DP · Performance diario del push</h2>
+      <p class="subtitle">Seguimiento día a día · se actualiza manualmente</p>
+    </div>
+    <div id="dppush-table-wrap"></div>
   </section>
 
   <!-- Prime Day: panel retirado del nav (21-ago, pedido de Roger). Sin botón que lo active queda inaccesible.
@@ -1653,6 +1662,12 @@ const refValido = rows => Array.isArray(rows) && rows.length>0 && REF_COLS.every
 const ACC_REF_COLS=["Refe","Accion"];
 const accRefValido = rows => Array.isArray(rows) && rows.length>0 && ACC_REF_COLS.every(k=>k in rows[0]);
 
+/* Cruce DP × Push (hoja "DP_Push"). Mismo patron de guarda. OJO con el nombre: DP_COLS ya
+   esta tomado por la hoja Delivery_Promise, y redeclarar un const en este ambito no rompe
+   esta tabla sino el <script> entero — es error de parseo, pagina en blanco. De ahi DPP_COLS. */
+const DPP_COLS=["Fecha","Refe","DP_dias"];
+const dppValido = rows => Array.isArray(rows) && rows.length>0 && DPP_COLS.every(k=>k in rows[0]);
+
 /* Modelos_Ventanas (tabla por familia). Mismo patrón de guarda. Exige lo que
    renderFamVentanas realmente necesita: Familia, Lectura y AL MENOS DOS columnas ^Ventas_
    (las ventanas se autodetectan por prefijo, así que no se pueden nombrar aquí). */
@@ -1750,6 +1765,40 @@ function _tipoCls(v){
   if(/cobertura/.test(k))       return "tipo-cobertura";
   return "tipo-otro";
 }
+/* Cruce DP × Push (hoja "DP_Push"): una fila por referencia y día, cargada a mano.
+   Se ordena por fecha DESC con el mismo _fechaOrd() del resto, para que lo último quede
+   arriba y las fechas ilegibles caigan al final en vez de romper el orden. */
+function renderDpPush(rows){
+  const wrap = document.getElementById("dppush-table-wrap");
+  if(!wrap) return;
+  if(!dppValido(rows)){
+    wrap.innerHTML = '<p class="empty-state">Se carga manualmente cada día · la primera entrada estará disponible a partir del 12-sep</p>';
+    return;
+  }
+  const orden = rows.slice().sort((a,b)=>{
+    const fa=_fechaOrd(a.Fecha), fb=_fechaOrd(b.Fecha);
+    if(fa==null && fb==null) return 0;
+    if(fa==null) return 1;
+    if(fb==null) return -1;
+    return fb-fa;
+  });
+  const celda = v => (v!==undefined && String(v).trim()!=="") ? String(v).trim() : "—";
+  let html = '<div style="overflow-x:auto"><table class="data-table"><thead><tr>'
+           + '<th>Fecha</th><th>Refe</th><th>DP ese día</th><th>Ventas €</th><th>Notas</th>'
+           + '</tr></thead><tbody>';
+  orden.forEach(r => {
+    const n = numES(r.Ventas_EUR);
+    html += "<tr>"
+          + `<td class="acc-ref-fecha">${_esc(celda(r.Fecha))}</td>`
+          + `<td>${_esc(celda(r.Refe))}</td>`
+          + `<td>${_esc(celda(r.DP_dias))}</td>`
+          + `<td>${n==null ? "—" : eur2(n)}</td>`
+          + `<td class="acc-ref-txt">${_esc(celda(r.Notas))}</td>`
+          + "</tr>";
+  });
+  html += "</tbody></table></div>";
+  wrap.innerHTML = html;
+}
 function renderAccionesRef(rows){
   const wrap = document.getElementById("acciones-ref-wrap");
   if(!wrap) return;
@@ -1781,10 +1830,10 @@ function renderAccionesRef(rows){
 async function boot(){
   let d = {...DATA};
   d.bitacora=[]; d.funnel=[]; d.precios=[]; d.modelos=[]; d.campanasView=DATA.campanas;
-  d.veredicto=[]; d.mom=[]; d.yoy=[]; d.ventanas=[]; d.embudo=[]; d.entrega=[]; d.nature=[]; d.referencias=[]; d.accionesRef=[];
+  d.veredicto=[]; d.mom=[]; d.yoy=[]; d.ventanas=[]; d.embudo=[]; d.entrega=[]; d.nature=[]; d.referencias=[]; d.accionesRef=[]; d.dppush=[];
   let mode="snapshot";
   if(SHEET_ID){
-    const names=["WoW_KPIs","Acciones_PPC","Bitacora","Funnel_Etapas","Veredicto","MoM_KPIs","YoY_Negocio","Modelos_Ventanas","Funnel","Delivery_Promise","Nature_Campanas","Referencias_Stock","Acciones_Referencias"];
+    const names=["WoW_KPIs","Acciones_PPC","Bitacora","Funnel_Etapas","Veredicto","MoM_KPIs","YoY_Negocio","Modelos_Ventanas","Funnel","Delivery_Promise","Nature_Campanas","Referencias_Stock","Acciones_Referencias","DP_Push"];
     const res=await Promise.allSettled(names.map(n=>fetchSheet(n)));
     const val=i=>res[i].status==="fulfilled"?res[i].value:null;
     /* OJO: "Funnel_Etapas" (índice 3) es la hoja vieja del tab Funnel oculto;
@@ -1795,7 +1844,7 @@ async function boot(){
          · "Modelos_WoW"     (27-ago)
          · "Precios_Impacto" (27-ago) — pestaña vacía; el tab Precios ya estaba disabled
          · "Campanas_ASINs"  (27-ago) — tab oculta por fuga de ASINs; no se descarga */
-    const wow=val(0),acc=val(1),bita=val(2),fun=val(3),ver=val(4),momS=val(5),yoyS=val(6),venS=val(7),embS=val(8),dpS=val(9),natS=val(10),refS=val(11),accS=val(12);   // dpS/natS/refS/accS: agregados al FINAL, no renumeran lo anterior
+    const wow=val(0),acc=val(1),bita=val(2),fun=val(3),ver=val(4),momS=val(5),yoyS=val(6),venS=val(7),embS=val(8),dpS=val(9),natS=val(10),refS=val(11),accS=val(12),dppS=val(13);   // dpS/natS/refS/accS/dppS: agregados al FINAL, no renumeran lo anterior
     let ok=0; const total=names.length;
     /* GUARDA, misma razón que la de acciones de abajo: sin este else, un fetch caído o una
        hoja vacía dejaban d.wow con el snapshot hardcodeado — "18-24 may" / "25-31 may" se
@@ -1826,6 +1875,10 @@ async function boot(){
     if(natS&&natValido(cleanRows(natS))){ d.nature=cleanRows(natS); ok++; }
     if(refS&&refValido(cleanRows(refS))){ d.referencias=cleanRows(refS); ok++; }
     if(accS&&accRefValido(cleanRows(accS))){ d.accionesRef=cleanRows(accS); ok++; }
+    /* dppValido() y no .length, misma razon que las otras cuatro: la hoja DP_Push todavia
+       no existe y gviz devuelve la 1a hoja del Sheet en vez de un 4xx. */
+    if(dppS&&dppValido(cleanRows(dppS))){ d.dppush=cleanRows(dppS); ok++; }
+    else d.dppush=[];
     mode = ok===0 ? "snapshot" : ok===total ? "live" : "parcial";
     if(res.some(r=>r.status==="rejected")) console.warn("Pestañas no cargadas:", res.map((r,i)=>r.status==="rejected"?names[i]:null).filter(Boolean).join(", "));
   }
@@ -1857,6 +1910,7 @@ async function boot(){
   renderNature(d.nature);
   renderReferencias(d.referencias);
   renderAccionesRef(d.accionesRef);
+  renderDpPush(d.dppush);
 }
 boot();
 
