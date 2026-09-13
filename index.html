@@ -279,6 +279,17 @@ footer b{color:var(--tinta)}
 .wt tr.famv-serene td{background:var(--ambar-bg)}
 .wt td.famv-lectura{text-align:left; font-family:inherit; font-weight:400; color:var(--gris); font-size:.82rem; white-space:normal; max-width:300px}
 
+/* ── MoM · reporte mensual (tab "MoM", hojas MoM_KPIs + MoM_Modelos + Delivery_Promise) ── */
+.mom-bloque{margin-top:40px; padding-top:34px; border-top:1px solid var(--linea)}
+.wt.mom-mod td, .wt.mom-mod th{padding:9px 10px; white-space:nowrap}
+.wt tr.mom-hero td{background:var(--verde-bg)}
+.wt tr.mom-cola td{opacity:.55}
+.wt.mom-dp td{text-align:center; font-variant-numeric:tabular-nums}
+.wt.mom-dp th{text-align:center}
+.wt.mom-dp td:first-child, .wt.mom-dp th:first-child{text-align:left}
+.wt tr.mom-jv td{background:var(--ambar-bg)}
+.mom-dia{color:var(--gris); font-weight:400; font-size:.8rem; margin-left:6px}
+
 /* ── Embudo · pirámide invertida (tab "Embudo", hoja Funnel) ── */
 .emb-wrap{max-width:760px; margin:0 auto}
 /* guia de lectura de la piramide: texto tenue, sin recuadro (no compite con el veredicto) */
@@ -423,6 +434,7 @@ footer b{color:var(--tinta)}
         <button class="tab active" data-target="resumen">Resumen</button>
         <button class="tab" data-target="resultados">Resultados</button>
         <button class="tab" data-target="comparativa">Comparativa</button>
+        <button class="tab" data-target="mom">MoM</button>
         <button class="tab" data-target="funnel" style="display:none">Funnel</button>
         <button class="tab" data-target="embudo">Embudo</button>
         <!-- Campañas: retirada del nav (27-ago). Los nombres de campaña del Sheet traen ASINs,
@@ -480,6 +492,25 @@ footer b{color:var(--tinta)}
     </div>
     <div id="wowtable"></div>
     <div id="famVentanas" class="famv"></div>
+  </section>
+
+  <section class="panel" data-tab="mom">
+    <div class="shead">
+      <h2>Análisis mensual · Julio vs Agosto 2026</h2>
+    </div>
+    <div class="famv-banner">En agosto la eficiencia publicitaria bajó respecto a julio (ROAS 6,9x → 5,6x). El motivo principal fue el aumento del plazo de entrega mostrado a partir del 11 de agosto, que redujo el ritmo de ventas diario en torno a un 37%. Aun así, la facturación total del negocio creció +21,5% (€67.907 → €82.499).</div>
+    <div class="mom-bloque">
+      <div class="famv-tit">Indicadores generales</div>
+      <div id="momKpis"></div>
+    </div>
+    <div class="mom-bloque">
+      <div class="famv-tit">Por modelo · julio vs agosto</div>
+      <div id="momModelos"></div>
+    </div>
+    <div class="mom-bloque">
+      <div class="famv-tit">Plazo de entrega · día a día</div>
+      <div id="momEntrega"></div>
+    </div>
   </section>
 
   <section class="panel" data-tab="embudo">
@@ -1821,14 +1852,118 @@ function renderAccionesRef(rows){
   html += "</tbody></table></div>";
   wrap.innerHTML = html;
 }
+/* ── MoM · reporte mensual julio vs agosto (tab "MoM") ──────────────────────────────────
+   Tres bloques con fuente propia, cada uno con su guarda: si una hoja falla, ese bloque cae a
+   emptyState y los otros dos siguen. Nombres de negocio (Modo B): nunca Child_ASIN, nunca "DP".
+
+   · Indicadores generales → MoM_KPIs vía compTableHTML, las mismas 2 filas que Comparativa/MoM.
+   · Por modelo            → MoM_Modelos (una fila por Mes × Modelo, ratios como fracción).
+   · Plazo día a día       → Delivery_Promise (d.entrega, ya validada por dpValido). Se leen
+     DP_min/DP_max numéricos, NUNCA Entrega_texto: cambió de formato el 06-sep ("de").
+
+   Serene Hybrid va con su nombre, a diferencia del tab Entrega (DP_NOMBRE lo muestra como
+   "Serene"): acá es un modelo propio en MoM_Modelos y se compara contra Serene. */
+function momModValido(rows){ return Array.isArray(rows) && rows.length>0 && rows[0]
+  && "Modelo" in rows[0] && "Ventas_Totales" in rows[0]; }
+const MOM_MES_PREV="2026-07", MOM_MES_CUR="2026-08";
+/* Referencias del día a día, en el orden pedido. Una referencia nueva en la hoja se agrega al
+   final en vez de perderse. */
+const MOM_DP_REFS=["Serene Hybrid 135x190","Moon 90x190","Moon 135x190","Orbit 90x190","Serene 150x190","Nature 135x190"];
+/* Ventana congelada del reporte: el seguimiento sigue sumando días en la hoja, pero este tab
+   es el informe de julio-agosto y no debe crecer solo. */
+const MOM_DP_DESDE="2026-08-25", MOM_DP_HASTA="2026-09-13";
+const MOM_HERO=["Serene Hybrid"], MOM_COLA=["Xstar","Palace"];
+
+/* ROAS con dos decimales y coma: fmtVal("x") usa toFixed(1) con punto, y acá la diferencia
+   entre modelos vive en el segundo decimal. */
+const momX = n => n==null ? "—" : n.toLocaleString("es-ES",{minimumFractionDigits:2,maximumFractionDigits:2})+"x";
+/* Ratio fracción → "30,4%". Vacío ⇒ "—" ANTES de formatear: Pct_Ads de Palace ago viene sin
+   dato (ventas 0) y no es lo mismo que 0 %. */
+const momPct = v => (v==null||String(v).trim()==="") ? "—" : pctES(v);
+function momDeltaX(cur, prev){
+  if(cur==null || prev==null) return {txt:"—", cls:"d-flat"};
+  const d=cur-prev;
+  if(Math.abs(d)<0.005) return {txt:"▬ 0,00x", cls:"d-flat"};
+  const num=Math.abs(d).toLocaleString("es-ES",{minimumFractionDigits:2,maximumFractionDigits:2});
+  return {txt:`${d>0?"▲":"▼"} ${d>0?"+":"−"}${num}x`, cls: d>0?"d-up":"d-down"};
+}
+
+function renderMoM(momMod, entrega){
+  /* Bloque 2 · Indicadores generales */
+  const kEl=document.getElementById("momKpis");
+  if(kEl){
+    const s=cleanRows(COMPMOM).slice().sort((x,y)=>periodMonthIdx(x.Semana)-periodMonthIdx(y.Semana));
+    kEl.innerHTML = s.length>=2 ? `<div style="overflow-x:auto">${compTableHTML(s[s.length-2],s[s.length-1])}</div>`
+                  : s.length===1 ? singleTableHTML(s[0]) : emptyState("Sin datos mensuales todavía");
+  }
+
+  /* Bloque 3 · Por modelo */
+  const mEl=document.getElementById("momModelos");
+  if(mEl){
+    const rows=cleanRows(momMod);
+    if(!momModValido(rows)){ mEl.innerHTML=emptyState("Detalle por modelo en preparación"); }
+    else{
+      const por={};
+      rows.forEach(r=>{ const mod=(r.Modelo||"").trim(), mes=(r.Mes||"").trim();
+        if(mod) (por[mod]=por[mod]||{})[mes]=r; });
+      const n=(r,k)=>r?numES(r[k]):null;
+      const modelos=Object.keys(por).sort((a,b)=>(n(por[b][MOM_MES_CUR],"Ventas_Totales")||0)-(n(por[a][MOM_MES_CUR],"Ventas_Totales")||0));
+      const body=modelos.map(mod=>{
+        const j=por[mod][MOM_MES_PREV], a=por[mod][MOM_MES_CUR];
+        const dRoas=momDeltaX(n(a,"ROAS_SP"), n(j,"ROAS_SP"));
+        const dVen=pctDelta(n(a,"Ventas_Totales"), n(j,"Ventas_Totales"), false);
+        const trcls=MOM_HERO.includes(mod)?"mom-hero":MOM_COLA.includes(mod)?"mom-cola":"";
+        return `<tr${trcls?` class="${trcls}"`:""}><td>${mod}</td>
+          <td>${eur(n(j,"Inv_SP"))}</td><td>${eur(n(a,"Inv_SP"))}</td>
+          <td>${eur(n(j,"Ventas_Ads"))}</td><td>${eur(n(a,"Ventas_Ads"))}</td>
+          <td>${momX(n(j,"ROAS_SP"))}</td><td>${momX(n(a,"ROAS_SP"))}</td>
+          <td>${eur(n(j,"Ventas_Totales"))}</td><td>${eur(n(a,"Ventas_Totales"))}</td>
+          <td>${momPct(j&&j.Pct_Ads)}</td><td>${momPct(a&&a.Pct_Ads)}</td>
+          <td>${momPct(j&&j.CVR)}</td><td>${momPct(a&&a.CVR)}</td>
+          <td class="${dRoas.cls}">${dRoas.txt}</td><td class="${dVen.cls}">${dVen.txt}</td></tr>`;
+      }).join("");
+      mEl.innerHTML=`<div style="overflow-x:auto"><table class="wt mom-mod">
+        <thead><tr><th>Modelo</th><th>Inv jul</th><th>Inv ago</th><th>Ventas ads jul</th><th>Ventas ads ago</th>
+          <th>ROAS jul</th><th>ROAS ago</th><th>Ventas tot jul</th><th>Ventas tot ago</th>
+          <th>%Ads jul</th><th>%Ads ago</th><th>CVR jul</th><th>CVR ago</th><th>Δ ROAS</th><th>Δ Ventas tot</th></tr></thead>
+        <tbody>${body}</tbody></table></div>
+        <div class="pricefoot">Inversión y ventas de publicidad corresponden a la línea de producto principal de cada modelo. La inversión de otros formatos publicitarios (~€790/mes) no se reparte por modelo.</div>`;
+    }
+  }
+
+  /* Bloque 4 · Plazo de entrega día × referencia */
+  const eEl=document.getElementById("momEntrega");
+  if(eEl){
+    const rows=cleanRows(entrega).filter(r=>{ const f=(r.Fecha||"").trim(); return f>=MOM_DP_DESDE && f<=MOM_DP_HASTA; });
+    if(!dpValido(rows)){ eEl.innerHTML=emptyState("Seguimiento en preparación"); }
+    else{
+      const ref=r=>`${(r.Modelo||"").trim()} ${(r.Talle||"").trim()}`;
+      const refs=MOM_DP_REFS.slice();
+      rows.forEach(r=>{ if(!refs.includes(ref(r))) refs.push(ref(r)); });
+      const fechas=[...new Set(rows.map(r=>(r.Fecha||"").trim()))].sort();   // ISO ⇒ cronológico
+      const celda={};
+      rows.forEach(r=>{ const mn=numES(r.DP_min), mx=numES(r.DP_max);
+        celda[(r.Fecha||"").trim()+"|"+ref(r)] = (mn!=null&&mx!=null) ? `${mn}-${mx}` : "—"; });
+      const body=fechas.map(f=>{
+        const dia=dpDiaSem(f), jv=(dia==="jue"||dia==="vie");
+        return `<tr${jv?' class="mom-jv"':""}><td>${dpFecha(f)}<span class="mom-dia">${dia}</span></td>
+          ${refs.map(k=>`<td>${celda[f+"|"+k]||"—"}</td>`).join("")}</tr>`;
+      }).join("");
+      eEl.innerHTML=`<div style="overflow-x:auto"><table class="wt mom-dp">
+        <thead><tr><th>Día</th>${refs.map(k=>`<th>${k.replace(/(\d)x(\d)/,"$1×$2")}</th>`).join("")}</tr></thead>
+        <tbody>${body}</tbody></table></div>
+        <div class="pricefoot">Seguimiento del plazo de entrega iniciado el 25 de agosto. Los días jueves y viernes muestran plazos más largos por el ciclo de despacho.</div>`;
+    }
+  }
+}
 /* ── Boot ── */
 async function boot(){
   let d = {...DATA};
   d.bitacora=[]; d.funnel=[]; d.precios=[]; d.modelos=[]; d.campanasView=DATA.campanas;
-  d.veredicto=[]; d.mom=[]; d.yoy=[]; d.ventanas=[]; d.embudo=[]; d.entrega=[]; d.nature=[]; d.referencias=[]; d.accionesRef=[]; d.dppush=[];
+  d.veredicto=[]; d.mom=[]; d.yoy=[]; d.ventanas=[]; d.embudo=[]; d.entrega=[]; d.nature=[]; d.referencias=[]; d.accionesRef=[]; d.dppush=[]; d.momMod=[];
   let mode="snapshot";
   if(SHEET_ID){
-    const names=["WoW_KPIs","Acciones_PPC","Bitacora","Funnel_Etapas","Veredicto","MoM_KPIs","YoY_Negocio","Modelos_Ventanas","Funnel","Delivery_Promise","Nature_Campanas","Referencias_Stock","Acciones_Referencias","DP_Push"];
+    const names=["WoW_KPIs","Acciones_PPC","Bitacora","Funnel_Etapas","Veredicto","MoM_KPIs","YoY_Negocio","Modelos_Ventanas","Funnel","Delivery_Promise","Nature_Campanas","Referencias_Stock","Acciones_Referencias","DP_Push","MoM_Modelos"];
     const res=await Promise.allSettled(names.map(n=>fetchSheet(n)));
     const val=i=>res[i].status==="fulfilled"?res[i].value:null;
     /* OJO: "Funnel_Etapas" (índice 3) es la hoja vieja del tab Funnel oculto;
@@ -1839,7 +1974,7 @@ async function boot(){
          · "Modelos_WoW"     (27-ago)
          · "Precios_Impacto" (27-ago) — pestaña vacía; el tab Precios ya estaba disabled
          · "Campanas_ASINs"  (27-ago) — tab oculta por fuga de ASINs; no se descarga */
-    const wow=val(0),acc=val(1),bita=val(2),fun=val(3),ver=val(4),momS=val(5),yoyS=val(6),venS=val(7),embS=val(8),dpS=val(9),natS=val(10),refS=val(11),accS=val(12),dppS=val(13);   // dpS/natS/refS/accS/dppS: agregados al FINAL, no renumeran lo anterior
+    const wow=val(0),acc=val(1),bita=val(2),fun=val(3),ver=val(4),momS=val(5),yoyS=val(6),venS=val(7),embS=val(8),dpS=val(9),natS=val(10),refS=val(11),accS=val(12),dppS=val(13),momModS=val(14);   // dpS/natS/refS/accS/dppS/momModS: agregados al FINAL, no renumeran lo anterior
     let ok=0; const total=names.length;
     /* GUARDA, misma razón que la de acciones de abajo: sin este else, un fetch caído o una
        hoja vacía dejaban d.wow con el snapshot hardcodeado — "18-24 may" / "25-31 may" se
@@ -1874,6 +2009,10 @@ async function boot(){
        no existe y gviz devuelve la 1a hoja del Sheet en vez de un 4xx. */
     if(dppS&&dppValido(cleanRows(dppS))){ d.dppush=cleanRows(dppS); ok++; }
     else d.dppush=[];
+    /* momModValido() y no .length, misma razón que las anteriores: sin la pestaña, gviz
+       devuelve la 1ª hoja del Sheet y el bloque por modelo dibujaría otra tabla. */
+    if(momModS&&momModValido(cleanRows(momModS))){ d.momMod=cleanRows(momModS); ok++; }
+    else d.momMod=[];
     mode = ok===0 ? "snapshot" : ok===total ? "live" : "parcial";
     if(res.some(r=>r.status==="rejected")) console.warn("Pestañas no cargadas:", res.map((r,i)=>r.status==="rejected"?names[i]:null).filter(Boolean).join(", "));
   }
@@ -1889,6 +2028,7 @@ async function boot(){
   // renderSerene(d.serene);   // oculto junto con "Por modelo"; contenedor #serSec display:none — reactivar quitando ambos
   renderBizKPIs(d.wow);
   renderComparativa(d.wow);
+  renderMoM(d.momMod, d.entrega);
   renderFamVentanas(d.ventanas, d.wow);
   renderEmbudo(d.embudo);
   // renderFam(d.familias); // tabla por familia: placeholder viejo (€13.316 no coincide con cards reales); reactivar con dato real por familia
