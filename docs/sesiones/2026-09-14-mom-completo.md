@@ -22,7 +22,9 @@ Fuente Sheet cliente ID 1gsanYhxoCEWS2k8FgiF6DbVFC6Eyne9bXqK5U1xegW4
 - Órdenes: jul 149 / ago 169 (+13,4%)
 - ROAS: jul 6,9x / ago 5,6x (-19,4%)
 - ACoS: jul 14,5% / ago 18,0% (+3,5pp)
-- Conversión: jul 2,0% / ago 2,4% (+0,4pp) — CVR de ads
+- Conversión de negocio: jul 2,0% / ago 2,4% (items pedidos/sesiones, del by-date). OJO: la
+  conversión de ADS (órdenes/clics) bajó 2,45%→2,10% — son métricas distintas, por eso el texto
+  de Indicadores dice 'cómo ese tráfico publicitario convierte' sin contradecir el 2,4%.
 - BuyBox: jul 97,4% / ago 98,1% (cargado A MANO en J5/J6, el by-date no lo trae)
 - Impresiones: jul 1.349.834 / ago 1.769.792 (+31,1%)
 - Clics: jul 6.084 / ago 8.037 (+32,1%)
@@ -82,7 +84,7 @@ DEUDA: los SB/SD de MoM_KPIs salen de 4 reports NO congelados (no reproducibles)
 1. Banner del tab Entrega dice que patrón jue/vie "no se puede afirmar" — el tab MoM ya lo afirma. Alinear.
 2. Congelar SB/SD mensuales antes del próximo MoM (docs/deuda-reporting.md).
 3. asin_map incompleto: 17 children jul / 15 ago sin mapear (docs/deuda-asin-map.md).
-4. B0CNVYKZL1 hardcodeada en DATA.acciones línea ~643 del dashboard (array muerto, sacar).
+4. B0CNVYKZL1 hardcodeada en DATA.acciones línea ~716 del dashboard (array muerto, sacar).
 5. Al armar MoM del mes que viene: MoM_Modelos y BuyBox de MoM_KPIs se cargan A MANO.
 
 ## MAIL/WSP ENVIADOS A ROGER
