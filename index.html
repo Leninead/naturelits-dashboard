@@ -284,6 +284,13 @@ footer b{color:var(--tinta)}
 .wt.mom-mod td, .wt.mom-mod th{padding:9px 10px; white-space:nowrap}
 .wt tr.mom-hero td{background:var(--verde-bg)}
 .wt tr.mom-cola td{opacity:.55}
+/* Columna Modelo fija al scrollear en horizontal. Fondo SÓLIDO (el de body) para que no se
+   transluzca lo que pasa por debajo; la esquina del header va por encima de todo. */
+.wt.mom-mod td:first-child, .wt.mom-mod th:first-child{position:sticky; left:0; z-index:2; background:var(--blanco)}
+.wt.mom-mod th:first-child{z-index:3}
+.wt.mom-mod tr.mom-hero td:first-child{background:var(--verde-bg)}
+/* opacity en la celda fija también vuelve translúcido su fondo: se atenúa por color. */
+.wt.mom-mod tr.mom-cola td:first-child{opacity:1; color:var(--gris)}
 .wt.mom-dp td{text-align:center; font-variant-numeric:tabular-nums}
 .wt.mom-dp th{text-align:center}
 .wt.mom-dp td:first-child, .wt.mom-dp th:first-child{text-align:left}
