@@ -296,7 +296,7 @@ footer b{color:var(--tinta)}
 .wt.mom-dp th{text-align:center}
 .wt.mom-dp td:first-child, .wt.mom-dp th:first-child{text-align:left}
 .wt tr.mom-jv td{background:var(--ambar-bg)}
-.mom-dia{color:var(--gris); font-weight:400; font-size:.8rem; margin-left:6px}
+.mom-dia{color:var(--gris); font-weight:400; font-size:.8rem}
 
 /* ── Embudo · pirámide invertida (tab "Embudo", hoja Funnel) ── */
 .emb-wrap{max-width:760px; margin:0 auto}
@@ -667,7 +667,7 @@ footer b{color:var(--tinta)}
   -->
 
   <footer>
-    <div>Fuente: Business Report + Bulk Export · <b>Naturelits ES</b></div>
+    <div>Fuente: datos internos de la cuenta · <b>Naturelits ES</b></div>
     <div id="ftDate">—</div>
   </footer>
 
@@ -724,8 +724,11 @@ const DATA = {
 };
 
 /* ── Utils ── */
-const eur = n => n==null ? "—" : "€"+Math.round(n).toLocaleString("es-ES");
-const eur2 = n => n==null ? "—" : "€"+n.toLocaleString("es-ES",{minimumFractionDigits:2,maximumFractionDigits:2});
+/* Miles con punto SIEMPRE: toLocaleString("es-ES") no agrupa los números de 4 cifras
+   (minimumGroupingDigits 2) y dejaba "€3394" al lado de "€23.417" en la misma tabla. */
+const milesES = s => String(s).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+const eur = n => n==null ? "—" : "€"+milesES(Math.round(n));
+const eur2 = n => { if(n==null) return "—"; const [i,d]=n.toFixed(2).split("."); return "€"+milesES(i)+","+d; };
 const pctChg = (cur,prev) => prev ? (cur/prev-1)*100 : 0;
 const arrow = d => d>0.05?"↑":d<-0.05?"↓":"→";
 /* Signo explícito del delta. El cliente lee "−7%", no "7%" con una flecha al lado:
@@ -903,7 +906,7 @@ const toN0 = v => { const n=numES(v); return n==null?0:n; };
 function fmtVal(val,f){
   const n=toN0(val);
   if(f==="eur") return eur(n);
-  if(f==="x")   return n.toFixed(1)+"x";
+  if(f==="x")   return n.toFixed(1).replace(".",",")+"x";
   if(f==="num") return n.toLocaleString("es-ES");
   if(f==="pct") return (val==null||String(val).trim()===""||String(val).trim()==="—")?"—":pctES(val);
   return val==null?"—":val;
@@ -1957,7 +1960,7 @@ function renderMoM(momMod, entrega){
         celda[(r.Fecha||"").trim()+"|"+ref(r)] = (mn!=null&&mx!=null) ? `${mn}-${mx}` : "—"; });
       const body=fechas.map(f=>{
         const dia=dpDiaSem(f), jv=(dia==="jue"||dia==="vie");
-        return `<tr${jv?' class="mom-jv"':""}><td>${dpFecha(f)}<span class="mom-dia">${dia}</span></td>
+        return `<tr${jv?' class="mom-jv"':""}><td>${dpFecha(f)}<span class="mom-dia"> · ${dia}</span></td>
           ${refs.map(k=>`<td>${celda[f+"|"+k]||"—"}</td>`).join("")}</tr>`;
       }).join("");
       eEl.innerHTML=`<div style="overflow-x:auto"><table class="wt mom-dp">
