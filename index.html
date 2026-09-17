@@ -713,7 +713,6 @@ const DATA = {
     {fecha:"2026-06-02", campana:"Harvest", accion:"Harvest", detalle:"8 keywords a Exact/Phrase", afecta:"Familias foco", estado:"Hecho", ambito:"cliente"},
     {fecha:"2026-06-03", campana:"Estrategia", accion:"Pivote a foco", detalle:"Serene/Nature/Palace/Xstar · Moon/Orbit sin PPC", afecta:"Serene/Nature/Palace/Xstar", estado:"Hecho", analisis:"Serene/Nature/Palace/Xstar concentran el ROAS rentable; Moon/Orbit no sostienen el ACoS objetivo, no merecen budget de PPC.", ambito:"cliente"},
     {fecha:"2026-06-03", campana:"DD 90x190", accion:"Pausar", detalle:"90x190 deficitario por margen · alineado con directiva", afecta:"Moon/Orbit 90x190", estado:"Hecho", analisis:"El margen unitario del 90x190 no cubre el coste publicitario: ni con ROAS aceptable el formato es rentable a nivel de P&L.", ambito:"cliente"},
-    {fecha:"2026-06-04", campana:"AUTO-MUELLES", accion:"Quitar negativo", detalle:"b0cnvykzl1 es Serene Hybrid propio, vivo (€6.078/30d)", afecta:"Serene 135x190 · B0CNVYKZL1", estado:"Pendiente", analisis:"El ASIN negativizado es producto propio activo (€6.078/30d): el negativo estaba bloqueando ventas reales, no tráfico ajeno.", ambito:"cliente"},
     {fecha:"2026-06-04", campana:"BLACKFRIDAY", accion:"Reactivar", detalle:"€8/d cuando Serene esté 100% live", afecta:"Serene/Palace/Nature", estado:"Pendiente", ambito:"cliente"},
     {fecha:"2026-06-04", campana:"PAT", accion:"Crear", detalle:"Sobre familias foco (no existía)", afecta:"Familias foco", estado:"Pendiente", ambito:"cliente"},
     {fecha:"2026-06-04", campana:"Harvest", accion:"Reestructurar", detalle:"Product Ads sobre foco y reactivar", afecta:"Familias foco", estado:"Pendiente", ambito:"cliente"},
@@ -1578,15 +1577,14 @@ function renderEntrega(rows){
   rows=cleanRows(rows);
   if(!dpValido(rows)){ el.innerHTML=emptyState("Seguimiento en preparación"); return; }
   /* Banner descriptivo: SOLO lo que el propio cuadro muestra, para que el cliente pueda
-     verificar cada frase mirando las columnas. NO afirma el ciclo por dia de semana
-     (plazos mas largos hacia el fin de semana): con 9 dias medidos hay un solo jueves y un
-     solo viernes, asi que ese efecto es indistinguible del salto puntual del 27-ago. Se
-     enuncia como hipotesis en seguimiento, no como hallazgo. Revisar cuando haya 3+
-     observaciones por dia de semana. */
+     verificar cada frase mirando las columnas. Al 17-sep van 24 dias medidos y cuatro
+     ciclos de deterioro; el texto los resume como "varias etapas" en vez de numerarlos,
+     porque el cuadro muestra dias y rangos, no ciclos etiquetados — esa lectura vive en
+     los daily. NO afirma el ciclo por dia de semana (plazos mas largos hacia el fin de
+     semana): el tab MoM ya lo sostiene con su propia ventana; aca se omite para no
+     afirmar sobre este cuadro algo que este cuadro no separa. */
   const banner=`<div class="dp-banner">
-    <p>Seguimiento diario del plazo de entrega, por las referencias que más venden — el mismo plazo que ve el comprador en la ficha. Se mide todos los días.</p>
-    <p>El 27 de agosto el plazo se amplió unos tres días de golpe. Después se fue recortando y desde el 30 quedó estable, en un nivel algo peor que el de antes del salto; en el último día medido el margen vuelve a ensancharse. No hay todavía una mejora sostenida. Se puede seguir en el cuadro, columna por columna, de izquierda a derecha.</p>
-    <p>Estoy vigilando además si el plazo se alarga de forma regular hacia el final de la semana. Con los días medidos hasta ahora ese posible patrón no se puede separar del deterioro puntual de fin de agosto: harían falta un par de semanas más de seguimiento para afirmarlo. Lo cruzo con la conversión en cuanto tenga más días, para medir cuánto pesa la entrega en el cierre.</p>
+    <p>El plazo de entrega que ve el comprador en la ficha lleva 24 días de seguimiento continuo, desde el 25 de agosto. Desde el arranque el plazo se fue deteriorando en varias etapas, sin recuperación sostenida. Las referencias principales llegaron a prometer 8-9 días a finales de agosto y hoy están en un rango de 8-11 días. Seguimos midiendo a diario para detectar cuándo el plazo se normaliza, y lo cruzamos con las ventas para medir cuánto pesa en el cierre.</p>
     </div>`;
   const fechas=[...new Set(rows.map(r=>(r.Fecha||"").trim()).filter(Boolean))].sort();   // ISO ⇒ cronológico
   /* Orden de referencias = orden de aparición en la hoja (se pega por volumen, top primero).
@@ -1812,7 +1810,7 @@ function renderDpPush(rows){
   const wrap = document.getElementById("dppush-table-wrap");
   if(!wrap) return;
   if(!dppValido(rows)){
-    wrap.innerHTML = '<p class="empty-state">Se carga manualmente cada día · la primera entrada estará disponible a partir del 12-sep</p>';
+    wrap.innerHTML = '<p class="empty-state">Sin datos de seguimiento todavía.</p>';
     return;
   }
   const orden = rows.slice().sort((a,b)=>{
