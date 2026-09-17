@@ -1698,7 +1698,7 @@ function renderModelos(rows){
    proposito: la guarda no puede depender de como viaje "Campana" en el encabezado. */
 const NAT_COLS=["Grupo","Start_date","Dias_launch","Stop_KW_EUR","Estado"];
 const natValido = rows => Array.isArray(rows) && rows.length>0 && NAT_COLS.every(k=>k in rows[0]);
-const REF_COLS=["Refe","ASIN","Ventas_base_1-7sep","Ventas_ahora_7d","Foco_activo"];
+const REF_COLS=["Refe","ASIN","Ventas_base_sem_anterior","Ventas_acum_desde_push","Foco_activo"];
 const refValido = rows => Array.isArray(rows) && rows.length>0 && REF_COLS.every(k=>k in rows[0]);
 
 /* Acciones por referencia (hoja "Acciones_Referencias"). Mismo patron de guarda: se exigen
@@ -1763,9 +1763,9 @@ function renderReferencias(rows){
      DIBUJA, y NO en REF_COLS, que es la guarda de esquema. Metidas en REF_COLS, refValido()
      las exigiría a la hoja y el módulo entero caería al empty-state — el mismo fallo que
      tuvieron los nombres *_EUR. Sin dato, el fallback de abajo las deja en "—". */
-  const cols = ["Refe","ASIN","Ventas_base_1-7sep","Ventas_ahora_7d","Delta_pct","Gasto_PPC_7d","Foco_activo","Fecha_push","DP_inicio"];
-  const labels = ["Refe","ASIN","Ventas base €","Ventas ahora €","Δ%","Gasto PPC €","Foco activo","Inicio push","DP al inicio"];
-  const EUR_COLS = ["Ventas_base_1-7sep","Ventas_ahora_7d","Gasto_PPC_7d"];
+  const cols = ["Refe","ASIN","Ventas_base_sem_anterior","Ventas_acum_desde_push","Delta_pct","Gasto_PPC_7d","Foco_activo","Fecha_push","DP_inicio"];
+  const labels = ["Refe","ASIN","Ventas base (sem. anterior)","Ventas acum. (desde el push)","Δ%","Gasto PPC €","Foco activo","Inicio push","DP al inicio"];
+  const EUR_COLS = ["Ventas_base_sem_anterior","Ventas_acum_desde_push","Gasto_PPC_7d"];
   let html = '<div style="overflow-x:auto"><table class="data-table"><thead><tr>' + labels.map(l=>`<th>${l}</th>`).join('') + '</tr></thead><tbody>';
   rows.forEach(r => {
     /* Delta ausente = sin color. Con `||0` un delta vacio se pintaba verde (0 >= 0). */
@@ -1783,9 +1783,9 @@ function renderReferencias(rows){
   /* Pie de tabla: define las tres columnas que se leen mal sin explicación. Va DENTRO del
      html y no en el markup estático, para que no quede colgando bajo el empty-state cuando
      la pestaña no trae filas. */
-  html += '<div class="pricefoot">Ventas base € = ventas de la semana 1-7 sep (antes del push). '
-        + 'Ventas ahora € = acumulado desde el 10-sep, se consolida cada viernes. '
-        + 'Foco activo = Activo (campaña dedicada activa) / Cobertura (solo automática).</div>';
+  html += '<div class="pricefoot">Ventas base = semana anterior al inicio del push · '
+        + 'Ventas acum. = acumulado desde el inicio del push, se consolida cada viernes · '
+        + 'Foco activo = Activo (campaña dedicada) / Cobertura (solo automática)</div>';
   wrap.innerHTML = html;
 }
 
