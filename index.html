@@ -1498,7 +1498,15 @@ function renderKanban(acc){
   const drawCols=wkKey=>{
     const rows = wkKey ? acc.filter(a=>a._wkKey===wkKey) : acc;   // filtro semana DESPUÉS del whitelist
     const groups={hecho:[],pendiente:[],"esperando-roger":[]};   // claves normalizadas: trim+lowercase
-    rows.forEach(a=>{const k=String(a.estado||"").trim().toLowerCase(); (groups[k]||(groups[k]=[])).push(a)});   // "Hecho " / "HECHO" caen en la misma columna
+    /* La hoja no tiene validacion de celda y el vocabulario de Estado deriva: la carga del
+       17-sep entro con "completado". Un estado fuera de las 3 claves creaba su propio grupo,
+       que ningun col() de abajo dibuja, y esas cards DESAPARECIAN sin error ni rastro — la
+       semana aparecia en el desplegable con las tres columnas vacias. ALIAS lo absorbe y el
+       warn deja el desvio visible en consola en vez de tragarselo. */
+    const ALIAS={completado:"hecho",completada:"hecho",completo:"hecho",finalizado:"hecho",aplicado:"hecho","en curso":"pendiente",pendientes:"pendiente","espera cliente":"esperando-roger","esperando roger":"esperando-roger"};
+    rows.forEach(a=>{let k=String(a.estado||"").trim().toLowerCase(); k=ALIAS[k]||k;   // "Hecho " / "HECHO" / "completado" caen en la misma columna
+      if(!(k in groups)) console.warn("[kanban] estado no reconocido:",JSON.stringify(a.estado),"→ card fuera de las 3 columnas:",a.fecha,a.campana);
+      (groups[k]||(groups[k]=[])).push(a)});
     const col=(key,title,cssc)=>{
       const items=(groups[key]||[]).slice().sort((a,b)=>(b.fecha||"").localeCompare(a.fecha||""));   // newest→oldest
       return `<div class="col ${cssc}"><h3>${title}<span class="cnt">${items.length}</span></h3>
