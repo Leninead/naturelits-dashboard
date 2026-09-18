@@ -1136,7 +1136,11 @@ function renderEmbudo(rows){
   if(!ver||!ent||!com){ el.innerHTML=emptyState("Embudo — faltan etapas en la hoja Funnel"); return; }
   const _cols=embWinCols(rows);
   if(_cols.length<2){ el.innerHTML=emptyState("Embudo — faltan las dos columnas de ventana en la hoja Funnel"); return; }
-  const P=_cols[0], A=_cols[1];
+  /* Las dos ULTIMAS, no las dos primeras: la hoja Funnel ACUMULA una columna Valor_ por
+     semana (al 18-sep ya son tres: 27ago-2sep, 3-9sep, 10-16sep). Con [0]/[1] el cuadro
+     volvia a quedar clavado en las dos mas viejas — el mismo sintoma que tenia con los
+     nombres hardcodeados, solo que ahora la etiqueta acompañaba al dato viejo y no se notaba. */
+  const P=_cols[_cols.length-2], A=_cols[_cols.length-1];
   const _winP=prettyWinEmb(P), _winA=prettyWinEmb(A);
   const _ventanas=`semana ${_winA} vs ${_winP}`;
   const _sn=document.querySelector('[data-tab="embudo"] .snote');
