@@ -460,9 +460,12 @@ footer b{color:var(--tinta)}
       <div class="navgrp-tabs">
         <button class="tab" data-target="negocio">Negocio</button>
         <button class="tab" data-target="entrega">Entrega</button>
-        <button class="tab" data-target="precios" disabled title="Próximamente">Precios</button>
+        <!-- Precios y Account Health: retirados del nav a pedido de Roger (18-sep). Precios nunca
+             tuvo fuente viva (Precios_Impacto se retiro del fetch el 27-ago, d.precios queda [] y
+             la tabla solo dibujaba el empty-state) y su <section> se elimino junto con la llamada a
+             renderPrecios(). Account Health no llegó a tener <section>: el boton apuntaba a un
+             data-tab inexistente desde el principio. -->
         <!-- Diario: oculto de la vista cliente (va al dash interno); la <section data-tab="diario"> y el tab Bitacora del Sheet quedan intactos -->
-        <button class="tab" data-target="health" disabled title="Próximamente">Account Health</button>
         <button class="tab" data-target="glosario">Glosario</button>
         <!-- Prime Day: retirado del nav a pedido de Roger (21-ago). La <section data-tab="primeday"> queda inaccesible; prime-day.html sigue en el repo. -->
       </div>
@@ -590,24 +593,6 @@ footer b{color:var(--tinta)}
       <div class="snote">Días de entrega por referencia, día a día</div>
     </div>
     <div id="entrega"></div>
-  </section>
-
-  <section class="panel" data-tab="precios">
-    <div class="shead">
-      <span class="snum">06</span><h2>Precios</h2>
-      <div class="snote">Nueva estructura aplicada el 5 de junio</div>
-    </div>
-    <div class="pricehead">Nueva estructura de precios · aplicada el 5 de junio</div>
-    <div style="overflow-x:auto">
-      <table class="tbl" id="precios">
-        <thead><tr>
-          <th>Modelo</th><th class="num">Antes</th><th class="num">Ahora</th>
-          <th class="num">Variación</th><th class="hide-m">Nota</th>
-        </tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
-    <div class="pricefoot">El efecto en ventas se mide en la Comparativa semana a semana.</div>
   </section>
 
   <section class="panel" data-tab="diario">
@@ -2059,7 +2044,8 @@ async function boot(){
   renderKanban(d.acciones);
   renderDiario(d.bitacora);
   renderEntrega(d.entrega);
-  renderPrecios(d.precios);
+  /* renderPrecios() retirado con su <section> (18-sep): querySelector("#precios tbody") devolveria
+     null y el tb.innerHTML de la primera linea cortaria boot() antes de los render de abajo. */
   renderFunnel(d.funnel);
   renderGlosario();
   renderNature(d.nature);
