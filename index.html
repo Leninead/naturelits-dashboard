@@ -901,8 +901,9 @@ function compTableHTML(a,b){
     const scale = x => { const n=toN0(x); return (r.pp && Math.abs(n)<=1) ? n*100 : n; };
     const na=scale(av), nb=scale(bv);
     let d, dtxt;
-    if(r.pp){ d=nb-na; dtxt=(d>0?"+":"")+d.toFixed(1).replace(".",",")+"pp"; }
-    else { d=na?((nb-na)/Math.abs(na)*100):0; dtxt=(d>0?"+":"")+d.toFixed(1).replace(".",",")+"%"; }
+    d = r.pp ? nb-na : (na?((nb-na)/Math.abs(na)*100):0);
+    if(Math.abs(d)<0.05) d=0;   // redondea a 0,0 → sin signo y en gris (nunca "−0,0")
+    dtxt=(d>0?"+":"")+d.toFixed(1).replace(".",",")+(r.pp?"pp":"%");
     const dir=d>0?1:d<0?-1:0;
     const cls=(r.good===0||dir===0)?"d-flat":(dir===r.good?"d-up":"d-down");
     return `<tr><td>${r.l}</td><td>${fmtVal(av,r.f)}</td><td>${fmtVal(bv,r.f)}</td><td class="${cls}">${dtxt}</td></tr>`;
@@ -1003,8 +1004,10 @@ function evoDelta(va,vb,pp,good){
   const scale=x=>{ const n=toN0(x); return (pp && Math.abs(n)<=1)?n*100:n; };
   const na=scale(va), nb=scale(vb);
   let d, dtxt;
-  if(pp){ d=nb-na; dtxt=(d>0?"+":"")+d.toFixed(1).replace(".",",")+"pp"; }
-  else { if(!na) return `<td class="d-flat">—</td>`; d=(nb-na)/Math.abs(na)*100; dtxt=(d>0?"+":"")+d.toFixed(1).replace(".",",")+"%"; }
+  if(!pp && !na) return `<td class="d-flat">—</td>`;
+  d = pp ? nb-na : (nb-na)/Math.abs(na)*100;
+  if(Math.abs(d)<0.05) d=0;   // redondea a 0,0 → sin signo y en gris (nunca "−0,0")
+  dtxt=(d>0?"+":"")+d.toFixed(1).replace(".",",")+(pp?"pp":"%");
   const dir=d>0?1:d<0?-1:0;
   const cls=(good===0||dir===0)?"d-flat":(dir===good?"d-up":"d-down");
   return `<td class="${cls}">${dtxt}</td>`;
@@ -1035,7 +1038,9 @@ function evoTableHTML(){
     {l:"CTR",            f:"pct", pp:1, good:0,  c1:null,                    c2:g(wPrev,"CTR"),             c3:g(wCur,"CTR")}
   ];
   const h1=g(y25,"Periodo")||"Año ant.", h2=(wPrev&&wPrev.Semana)||"Sem ant.", h3=(wCur&&wCur.Semana)||"Sem actual";
-  const rows=M.map(m=>`<tr><td>${m.l}</td><td>${evoCell(m.c1,m.f)}</td><td>${evoCell(m.c2,m.f)}</td><td>${evoCell(m.c3,m.f)}</td>${evoDelta(m.c1,m.c3,m.pp,m.good)}${evoDelta(m.c2,m.c3,m.pp,m.good)}</tr>`).join("");
+  /* Fila sin dato en ninguna de las 3 columnas (p. ej. CVR negocio sin YoY cargado): se oculta,
+     no se rellena con otro cálculo. */
+  const rows=M.filter(m=>!(evoMissing(m.c1)&&evoMissing(m.c2)&&evoMissing(m.c3))).map(m=>`<tr><td>${m.l}</td><td>${evoCell(m.c1,m.f)}</td><td>${evoCell(m.c2,m.f)}</td><td>${evoCell(m.c3,m.f)}</td>${evoDelta(m.c1,m.c3,m.pp,m.good)}${evoDelta(m.c2,m.c3,m.pp,m.good)}</tr>`).join("");
   const nota=(g(y26cur,"Nota")||g(y25,"Nota")||"Publicidad: histórico 2025 no disponible");
   return `<div style="overflow-x:auto"><table class="wt"><thead><tr><th>Métrica</th><th>${h1}</th><th>${h2}</th><th>${h3}</th><th>Δ YoY</th><th>Δ WoW</th></tr></thead><tbody>${rows}</tbody></table></div>
     <div class="pricefoot">${nota}</div>`;
