@@ -614,7 +614,7 @@ footer b{color:var(--tinta)}
   <section class="panel" data-tab="nature">
     <div class="section-header">
       <h2>Campañas Nature <span class="badge-new">NUEVO</span></h2>
-      <p class="subtitle">Últimos 7 días · 9 campañas nuevas (08-sep) + 4 preexistentes (07-sep) · Stop-loss visible por campaña</p>
+      <p class="subtitle" id="nature-sub">Acumulado desde el lanzamiento (8-sep → 23-sep) · 9 campañas nuevas (08-sep) + 4 preexistentes (09-jul) · Stop-loss visible por campaña</p>
     </div>
     <div id="nature-table-wrap"></div>
     <p class="note-atribucion">⏱ Ventana de atribución SP: 14 días. Campañas con &lt;3 días de vida muestran datos incompletos.</p>
@@ -1716,6 +1716,21 @@ function renderNature(rows){
   const wrap = document.getElementById("nature-table-wrap");
   if(!wrap) return;
   if(!rows || !rows.length){ wrap.innerHTML='<p class="empty-state">Sin datos — pegá los valores en la pestaña Nature_Campanas del Sheet.</p>'; return; }
+  /* Subtítulo derivado de la hoja, para que no quede viejo: inicio por grupo = Start_date más
+     antiguo; fin de ventana = Start_date + Dias_launch − 1 (Dias_launch cuenta el día de inicio).
+     Si falta un grupo o una fecha no parsea, queda el texto fijo del HTML. */
+  const sub=document.getElementById("nature-sub");
+  const MES=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+  const dmy=v=>{ const m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(v||"").trim()); return m?new Date(+m[3],+m[2]-1,+m[1]):null; };
+  const dd=(d,pad)=>`${pad?String(d.getDate()).padStart(2,"0"):d.getDate()}-${MES[d.getMonth()]}`;
+  const grupos={};
+  rows.forEach(r=>{ const g=(r["Grupo"]||"").trim(), d=dmy(r["Start_date"]), n=numES(r["Dias_launch"]);
+    if(!g||!d||n==null) return;
+    const o=grupos[g]||(grupos[g]={n:0,ini:d,fin:null}); o.n++;
+    if(d<o.ini) o.ini=d;
+    const f=new Date(d); f.setDate(f.getDate()+n-1); if(!o.fin||f>o.fin) o.fin=f; });
+  const nu=grupos["Nueva"], pre=grupos["Preexistente"];
+  if(sub && nu && pre) sub.textContent=`Acumulado desde el lanzamiento (${dd(nu.ini)} → ${dd(nu.fin)}) · ${nu.n} campañas nuevas (${dd(nu.ini,1)}) + ${pre.n} preexistentes (${dd(pre.ini,1)}) · Stop-loss visible por campaña`;
   const cols = ["Grupo","Campaña","Start_date","Dias_launch","Impresiones","Clicks","Gasto_EUR","Ventas_EUR","ACoS_pct","ROAS","Stop_KW_EUR","Stop_Modelo_EUR","Estado"];
   const labels = ["Grupo","Campaña","Inicio","Días","Impr.","Clicks","Gasto €","Ventas €","ACoS %","ROAS","Stop KW €","Stop Modelo €","Estado"];
   const EUR_COLS = ["Gasto_EUR","Ventas_EUR","Stop_KW_EUR","Stop_Modelo_EUR"];
