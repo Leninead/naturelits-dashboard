@@ -496,8 +496,8 @@ footer b{color:var(--tinta)}
       <div class="snote" id="compSub">Período sobre período · evolutivo, semana, mes y año</div>
     </div>
     <div class="seg" id="compSeg">
-      <button class="segbtn active" data-mode="evo">Evolutivo</button>
-      <button class="segbtn" data-mode="wow">Semana (WoW)</button>
+      <button class="segbtn" data-mode="evo">Evolutivo</button>
+      <button class="segbtn active" data-mode="wow">Semana (WoW)</button>
       <button class="segbtn" data-mode="mom">Mes (MoM)</button>
       <button class="segbtn" data-mode="todo">Todo</button>
     </div>
@@ -995,7 +995,7 @@ function renderComparativa(wow){
     }
   };
   seg.querySelectorAll(".segbtn").forEach(b=>b.addEventListener("click",()=>{ if(b.disabled)return; draw(b.dataset.mode); }));
-  draw("evo");
+  draw("wow");   // vista por defecto: Semana (WoW)
 }
 /* Evolutivo: 6 columnas combinando YoY_Negocio (2025/2026) + WoW_KPIs (25-31 / 1-7) */
 const evoMissing=v=>v==null||String(v).trim()===""||String(v).trim()==="—";
