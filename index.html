@@ -991,6 +991,7 @@ function renderComparativa(wow){
       else out.innerHTML=emptyState();
     } else { // evolutivo: 3 columnas (año ant / sem ant / sem actual) + Δ YoY + Δ WoW
       out.innerHTML = (COMPWOW.length||COMPYOY.length) ? evoTableHTML() : emptyState();
+      if(subEl && !/Δ YoY/.test(out.innerHTML)) subEl.textContent="Semana anterior · semana actual — con Δ WoW (año anterior sin datos todavía)";
     }
   };
   seg.querySelectorAll(".segbtn").forEach(b=>b.addEventListener("click",()=>{ if(b.disabled)return; draw(b.dataset.mode); }));
@@ -1040,9 +1041,13 @@ function evoTableHTML(){
   const h1=g(y25,"Periodo")||"Año ant.", h2=(wPrev&&wPrev.Semana)||"Sem ant.", h3=(wCur&&wCur.Semana)||"Sem actual";
   /* Fila sin dato en ninguna de las 3 columnas (p. ej. CVR negocio sin YoY cargado): se oculta,
      no se rellena con otro cálculo. */
-  const rows=M.filter(m=>!(evoMissing(m.c1)&&evoMissing(m.c2)&&evoMissing(m.c3))).map(m=>`<tr><td>${m.l}</td><td>${evoCell(m.c1,m.f)}</td><td>${evoCell(m.c2,m.f)}</td><td>${evoCell(m.c3,m.f)}</td>${evoDelta(m.c1,m.c3,m.pp,m.good)}${evoDelta(m.c2,m.c3,m.pp,m.good)}</tr>`).join("");
+  /* Sin ningún dato del año anterior, "Año ant." y "Δ YoY" se ocultan; vuelven solas en cuanto
+     YoY_Negocio traiga la semana. (Quedan igual 2 columnas de valores + Δ WoW, así que la vista
+     Evolutivo se mantiene.) */
+  const hasYoY=M.some(m=>!evoMissing(m.c1));
+  const rows=M.filter(m=>!(evoMissing(m.c1)&&evoMissing(m.c2)&&evoMissing(m.c3))).map(m=>`<tr><td>${m.l}</td>${hasYoY?`<td>${evoCell(m.c1,m.f)}</td>`:""}<td>${evoCell(m.c2,m.f)}</td><td>${evoCell(m.c3,m.f)}</td>${hasYoY?evoDelta(m.c1,m.c3,m.pp,m.good):""}${evoDelta(m.c2,m.c3,m.pp,m.good)}</tr>`).join("");
   const nota=(g(y26cur,"Nota")||g(y25,"Nota")||"Publicidad: histórico 2025 no disponible");
-  return `<div style="overflow-x:auto"><table class="wt"><thead><tr><th>Métrica</th><th>${h1}</th><th>${h2}</th><th>${h3}</th><th>Δ YoY</th><th>Δ WoW</th></tr></thead><tbody>${rows}</tbody></table></div>
+  return `<div style="overflow-x:auto"><table class="wt"><thead><tr><th>Métrica</th>${hasYoY?`<th>${h1}</th>`:""}<th>${h2}</th><th>${h3}</th>${hasYoY?"<th>Δ YoY</th>":""}<th>Δ WoW</th></tr></thead><tbody>${rows}</tbody></table></div>
     <div class="pricefoot">${nota}</div>`;
 }
 /* Fecha corta es-ES para el Veredicto: "2026-08-20" → "20-ago".
