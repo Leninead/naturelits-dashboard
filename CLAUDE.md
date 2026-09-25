@@ -138,7 +138,7 @@ panel servido.
 
 ### Pendientes (13-sep)
 
-1. **Banner del tab Entrega desalineado**: sigue diciendo que el patrón jueves/viernes no se
+1. ✅ *(24-sep: el banner ahora se calcula desde el cuadro, ver abajo)* **Banner del tab Entrega desalineado**: sigue diciendo que el patrón jueves/viernes no se
    puede afirmar, y el tab MoM ya lo afirma (3 semanas: jue 12,3 · vie 12,7 días contra
    10,3–11,7 el resto).
 2. **BuyBox de cuenta en `MoM_KPIs` J5/J6 cargado a mano** (97,4 % / 98,1 %): el by-date no
@@ -146,6 +146,34 @@ panel servido.
    muestra "0%".
 3. **SB/SD del `Ad_Sales` de `MoM_KPIs` no reproducibles**: salen de campaign reports mensuales
    no congelados. Ver `docs/deuda-reporting.md` en el repo reporting.
+
+---
+
+## 🔧 Fixes 24-sep — derivar de los datos, no fijar texto
+
+Commits `305a77e` → `eac0a7f` en `main`. Regla común: **todo texto con cifra o fecha se
+calcula de la hoja**; el texto fijo del HTML queda solo como respaldo.
+
+- **Nature:** el subtítulo sale de `Grupo`/`Start_date`/`Dias_launch` (inicio por grupo y
+  fin = inicio + días − 1). Con `Ventas_EUR = 0`, ACoS y ROAS se muestran "—", no "0,0%" / "0".
+  Nota de atribución: 7 días en anuncios de producto, 14 en marca y display.
+- **Referencias:** lee `Fecha_push` y `DP_inicio` (I:J, carga manual) por nombre, fuera de
+  `REF_COLS`. Nota al pie: base 3-9 sep · acumulado por semanas cerradas desde el 9-sep ·
+  Δ% por venta media diaria · sin Δ en refes que entraron al impulso después del 9-sep.
+  Fuera la nota interna "⚠ Las 3 referencias rojas…".
+- **Entrega:** el banner se calcula del cuadro: días medidos, fecha de inicio y plazos del
+  último día (rango más repetido + referencias fuera de él con la diferencia en días).
+- **Negocio:** el contenedor `#fam` ("Próximamente…") se oculta; sin dato no se muestra.
+- **Modelos:** el peso de Serene sale del cuadro (ventas Serene / TOTAL, semana actual).
+  Nota al pie: si el TOTAL por producto difiere más de 1 € de `Ventas_Totales` de
+  Resultados, se declara por semana.
+- **Resultados y Comparativa:** ROAS con coma ("2,3x") en la tarjeta; % con 1 decimal fijo
+  en `fmtVal("pct")` (`pctES(v, minDec)`); un Δ que redondea a 0,0 sale "0,0pp" / "0,0%",
+  sin signo y en gris.
+- **Evolutivo:** filas sin dato en las 3 columnas se ocultan; sin ningún dato del año
+  anterior se ocultan "Año ant." y "Δ YoY" (y el subtítulo lo dice). Vuelven solas al
+  cargar `YoY_Negocio`.
+- **Comparativa abre en Semana (WoW)** (`draw("wow")` + clase `active` estática en ese botón).
 
 ---
 
