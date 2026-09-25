@@ -732,14 +732,14 @@ function numES(v){
   return isNaN(n)?null:n;
 }
 /* formato porcentaje: acepta "11,8%"/"11.8%" string o decimal 0.118 → "11,8%" */
-function pctES(v){
+function pctES(v,minDec){
   if(v==null) return "—";
   let s=String(v).trim();
   if(s===""||s==="—"||s==="-") return "—";
-  if(s.includes("%")){ const n=numES(s); return n==null?s:n.toLocaleString("es-ES",{maximumFractionDigits:1})+"%"; }
+  if(s.includes("%")){ const n=numES(s); return n==null?s:n.toLocaleString("es-ES",{minimumFractionDigits:minDec||0,maximumFractionDigits:1})+"%"; }
   const n=numES(s); if(n==null) return "—";
   const p = Math.abs(n)<=1 ? n*100 : n;
-  return p.toLocaleString("es-ES",{maximumFractionDigits:1})+"%";
+  return p.toLocaleString("es-ES",{minimumFractionDigits:minDec||0,maximumFractionDigits:1})+"%";
 }
 const emptyState = msg => `<div class="emptyst">${msg||"Sin datos aún — se cargan martes y viernes"}</div>`;
 /* filtro anti-leyenda: descarta filas cuya 1ª celda arranca con ⓘ o está vacía */
@@ -891,7 +891,7 @@ function fmtVal(val,f){
   if(f==="eur") return eur(n);
   if(f==="x")   return n.toFixed(1).replace(".",",")+"x";
   if(f==="num") return n.toLocaleString("es-ES");
-  if(f==="pct") return (val==null||String(val).trim()===""||String(val).trim()==="—")?"—":pctES(val);
+  if(f==="pct") return (val==null||String(val).trim()===""||String(val).trim()==="—")?"—":pctES(val,1);   // 1 decimal fijo: "20,0%", no "20%"
   return val==null?"—":val;
 }
 function compTableHTML(a,b){
@@ -1298,11 +1298,22 @@ function renderFamVentanas(rows, wow){
   const _cur =(_bCur!=null&&_bCur!==0)?_bCur:_tCur;
   const _prev=(_bPrev!=null&&_bPrev!==0)?_bPrev:_tPrev;
   const _pct=_prev?Math.round((_cur-_prev)/_prev*100):0;
+  /* Peso de Serene derivado del propio cuadro (ventas Serene / TOTAL, semana actual), para
+     que el texto no quede viejo. Sin dato, la frase se omite. */
+  const _ser=rows.find(r=>/serene/i.test((r.Familia||"").trim()))||{};
+  const _serPct=(_tCur&&numES(_ser[vCur])!=null)?Math.round(numES(_ser[vCur])/_tCur*100):null;
+  const _serTxt=_serPct==null?"":`, que concentra ${_serPct>=60?"la mayor parte":_serPct>=50?"algo más de la mitad":_serPct>=45?"casi la mitad":"el"} de las ventas (${_serPct} %)`;
   /* Retirada la coletilla de ventana sin cerrar (21-ago): la heurística asumía que toda caída era
      artefacto de atribución, y contradecía el Veredicto (la caída de 13-19 es real, por plazo de
      entrega). La preliminaridad ya la comunica el header ("actualización parcial"). */
-  const banner=`La facturación total ${_cur>=_prev?'subió a':'quedó en'} <b>${_mil(_cur)} €</b> (${_pct>=0?'+':''}${_pct}% vs. la ventana anterior). El foco de trabajo sigue en <b>Serene</b> (~60% del catálogo): concentra el tráfico y la inversión, y la conversión de su ficha es la palanca que define el resultado.`;
+  const banner=`La facturación total ${_cur>=_prev?'subió a':'quedó en'} <b>${_mil(_cur)} €</b> (${_pct>=0?'+':''}${_pct}% vs. la ventana anterior). El foco de trabajo sigue en <b>Serene</b>${_serTxt}: la conversión de su ficha es la palanca que define el resultado.`;
   const invPrevTot=iPrev?numES(_tot[iPrev]):null, invCurTot=iCur?numES(_tot[iCur]):null;
+  /* Diferencia entre el TOTAL de este cuadro (informe por producto) y Ventas_Totales de
+     Resultados, por semana: se declara, no se esconde. Solo si supera 1 €. */
+  const _difs=[[vPrev,_tPrev,_bPrev],[vCur,_tCur,_bCur]]
+    .filter(([,t,b])=>t!=null&&b!=null&&b!==0&&Math.abs(t-b)>=1)
+    .map(([k,t,b])=>`en la semana ${prettyWin(k)} difieren ${_mil(Math.abs(t-b))} € del total de Resultados`);
+  const _difTxt=_difs.length?` Las ventas por familia salen del informe por producto; ${_difs.join(" y ")} por ajustes posteriores de Amazon.`:"";
   el.innerHTML=`
     <div class="famv-tit">Por familia · últimos 7 días vs. previos</div>
     <div class="famv-sub">Ventas del negocio · Últimos 7 días · cierre jueves · foco de mejora por familia</div>
@@ -1310,7 +1321,7 @@ function renderFamVentanas(rows, wow){
     <div style="overflow-x:auto"><table class="wt">
       <thead><tr><th>Familia</th><th>Ventas ${prettyWin(vPrev)}</th><th>Ventas ${prettyWin(vCur)}</th><th>Δ% Ventas</th><th>Inv. SP ${iPrev?prettyWin(iPrev):''}</th><th>Inv. SP ${iCur?prettyWin(iCur):''}</th><th>Δ% Inv</th><th>Lectura</th></tr></thead>
       <tbody>${body}</tbody></table></div>
-    <div class="pricefoot">Inv. = inversión en Sponsored Products por producto anunciado (suma exacta por familia: ${eur(invPrevTot)} / ${eur(invCurTot)}). La inversión total de la cuenta (visible en Resultados y Comparativa) incluye además marca y recuperación de visitantes, que no se atribuyen por modelo — por eso este cuadro usa solo SP.</div>`;
+    <div class="pricefoot">Inv. = inversión en Sponsored Products por producto anunciado (suma exacta por familia: ${eur(invPrevTot)} / ${eur(invCurTot)}). La inversión total de la cuenta (visible en Resultados y Comparativa) incluye además marca y recuperación de visitantes, que no se atribuyen por modelo — por eso este cuadro usa solo SP.${_difTxt}</div>`;
 }
 
 /* ── Glosario (cliente) ── */
@@ -1763,11 +1774,14 @@ function renderNature(rows){
     const gasto = numES(r["Gasto_EUR"]), stopKW = numES(r["Stop_KW_EUR"]);
     const stopClass = (gasto!=null && stopKW!=null && gasto>=stopKW) ? "stop-loss-alert" : "";
     const grupoClass = /^nueva/i.test(grupo) ? "grupo-nueva" : "grupo-preexistente";
+    const sinVentas = numES(r["Ventas_EUR"])===0;
     html += `<tr class="${stopClass}">`;
     cols.forEach(c => {
       let val = (r[c]!==undefined && String(r[c]).trim()!=="") ? r[c] : "—";
       if(c==="Grupo")    val = `<span class="badge-grupo ${grupoClass}">${grupo||"—"}</span>`;
-      if(c==="ACoS_pct") val = _pct1(r[c]);
+      /* Sin ventas, ACoS y ROAS no están definidos: "—", no "0,0%" / "0". */
+      if(c==="ACoS_pct") val = sinVentas ? "—" : _pct1(r[c]);
+      if(c==="ROAS" && sinVentas) val = "—";
       if(EUR_COLS.indexOf(c)>-1){ const n=numES(r[c]); val = n==null ? "—" : eur2(n); }
       html += `<td>${val}</td>`;
     });
