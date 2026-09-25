@@ -632,7 +632,6 @@ footer b{color:var(--tinta)}
       <p class="subtitle">Qué se tocó por refe · una fila por acción · histórico semanal</p>
       <div id="acciones-ref-wrap"></div>
     </div>
-    <p class="note-atribucion">⚠ Las 3 referencias rojas nunca aparecen en esta vista.</p>
   </section>
 
   <section class="panel" data-tab="dppush">
@@ -1787,9 +1786,11 @@ function renderReferencias(rows){
   /* Pie de tabla: define las tres columnas que se leen mal sin explicación. Va DENTRO del
      html y no en el markup estático, para que no quede colgando bajo el empty-state cuando
      la pestaña no trae filas. */
-  html += '<div class="pricefoot">Ventas base = semana anterior al inicio del push · '
-        + 'Ventas acum. = acumulado desde el inicio del push, se consolida cada viernes · '
-        + 'Foco activo = Activo (campaña dedicada) / Cobertura (solo automática)</div>';
+  html += '<div class="pricefoot">Ventas base = semana 3-9 sep, anterior al primer impulso · '
+        + 'Ventas acum. = suma de semanas cerradas desde el 9-sep · '
+        + 'Δ% = venta media diaria del acumulado frente a la de la semana base; sin Δ en las '
+        + 'referencias que entraron al impulso después del 9-sep · '
+        + 'Foco activo = campaña dedicada / Cobertura = solo automática</div>';
   wrap.innerHTML = html;
 }
 
