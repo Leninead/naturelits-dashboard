@@ -826,7 +826,7 @@ function renderKPIs(wow){
   const items=[
     {lbl:"Ventas Ads",  val:eur(toN(c.Ad_Sales)),  d:pctChg(toN(c.Ad_Sales),toN(p.Ad_Sales)),  up:true},
     {lbl:"Inversión",   val:eur(toN(c.Spend)),  d:pctChg(toN(c.Spend),toN(p.Spend)),  up:true},
-    {lbl:"ROAS",        val:toN(c.ROAS).toFixed(1)+"x", d:pctChg(toN(c.ROAS),toN(p.ROAS)), up:true},
+    {lbl:"ROAS",        val:fmtVal(c.ROAS,"x"), d:pctChg(toN(c.ROAS),toN(p.ROAS)), up:true},
     {lbl:"ACoS",        val:pctES(c.ACoS),      d:ppN(c.ACoS)-ppN(p.ACoS),    up:false, unit:"pp"},
     {lbl:"TACoS",       val:pctES(c.TACoS),     d:ppN(c.TACoS)-ppN(p.TACoS),  up:false, unit:"pp"},
     {lbl:"Órdenes",     val:toN(c.Orders),      d:pctChg(toN(c.Orders),toN(p.Orders)),up:true}
@@ -1579,10 +1579,32 @@ function renderEntrega(rows){
      los daily. NO afirma el ciclo por dia de semana (plazos mas largos hacia el fin de
      semana): el tab MoM ya lo sostiene con su propia ventana; aca se omite para no
      afirmar sobre este cuadro algo que este cuadro no separa. */
-  const banner=`<div class="dp-banner">
-    <p>El plazo de entrega que ve el comprador en la ficha lleva 24 días de seguimiento continuo, desde el 25 de agosto. Desde el arranque el plazo se fue deteriorando en varias etapas, sin recuperación sostenida. Las referencias principales llegaron a prometer 8-9 días a finales de agosto y hoy están en un rango de 8-11 días. Seguimos midiendo a diario para detectar cuándo el plazo se normaliza, y lo cruzamos con las ventas para medir cuánto pesa en el cierre.</p>
-    </div>`;
   const fechas=[...new Set(rows.map(r=>(r.Fecha||"").trim()).filter(Boolean))].sort();   // ISO ⇒ cronológico
+  /* Banner derivado del propio cuadro, para que no quede viejo: días = fechas medidas,
+     inicio = primera fecha, "hoy" = última fecha. Rango principal = el plazo más repetido ese
+     día; las referencias fuera de él se nombran con su plazo y la diferencia en días. */
+  const MESL=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+  const isoL=f=>{ const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(f||""); return m?`${+m[3]} de ${MESL[+m[2]-1]}`:f; };
+  let hoyTxt="";
+  if(fechas.length){
+    const ult=fechas[fechas.length-1], grp={};
+    rows.filter(r=>(r.Fecha||"").trim()===ult).forEach(r=>{ const mn=numES(r.DP_min), mx=numES(r.DP_max);
+      if(mn==null||mx==null) return; const k=mn+"-"+mx; (grp[k]=grp[k]||{mn,mx,refs:[]}).refs.push(dpRef(r)); });
+    const gs=Object.values(grp).sort((a,b)=>b.refs.length-a.refs.length);
+    if(gs.length){
+      const top=gs[0], resto=gs.slice(1);
+      const y=a=>a.length>1?a.slice(0,-1).join(", ")+" y "+a[a.length-1]:a[0];
+      hoyTxt=` Hoy las referencias principales prometen ${top.mn}-${top.mx} días`;
+      if(resto.length){
+        const dMin=Math.min(...resto.map(g=>g.mn))-top.mx, dMax=Math.max(...resto.map(g=>g.mx))-top.mx;
+        hoyTxt+="; "+resto.map(g=>`${y(g.refs)}, ${g.mn}-${g.mx} días`).join("; ")
+              +`: entre ${dMin} y ${dMax} días más que el resto de medidas.`;
+      } else hoyTxt+=".";
+    }
+  }
+  const banner=`<div class="dp-banner">
+    <p>El plazo de entrega que ve el comprador en la ficha lleva ${fechas.length} días de seguimiento desde el ${isoL(fechas[0])}.${hoyTxt} Seguimos midiendo a diario y lo cruzamos con las ventas para medir cuánto pesa en el cierre.</p>
+    </div>`;
   /* Orden de referencias = orden de aparición en la hoja (se pega por volumen, top primero).
      Si la hoja gana una columna Units_30d con dato para TODAS, esa manda. */
   const orden=[], visto={}, uni={};
@@ -2057,7 +2079,9 @@ async function boot(){
   renderFamVentanas(d.ventanas, d.wow);
   renderEmbudo(d.embudo);
   // renderFam(d.familias); // tabla por familia: placeholder viejo (€13.316 no coincide con cards reales); reactivar con dato real por familia
-  document.getElementById("fam").innerHTML = emptyState("Próximamente · se carga con el Business Report by child");
+  /* Sin dato por familia en esta pestaña: el contenedor se oculta en vez de mostrar un
+     "Próximamente" vacío al cliente. Reactivar = volver a llamar a renderFam con dato real. */
+  document.getElementById("fam").style.display = "none";
   // renderCamp(d.campanasView);   // tab oculta (fuga de ASINs): no se dibuja para que los
   //   nombres crudos no queden en el DOM de una página pública. Reactivar = descomentar esta
   //   línea, quitar los display:none del botón y la <section>, y sanear Modo B en mapCampanas.
