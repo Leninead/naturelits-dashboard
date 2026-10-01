@@ -1584,8 +1584,37 @@ function renderEntrega(rows, rows21){
       } else hoyTxt+=".";
     }
   }
+  const cierre="Seguimos midiendo a diario y lo cruzamos con las ventas para medir cuánto pesa en el cierre.";
+  let bannerTxt=`El plazo de entrega que ve el comprador en la ficha lleva ${fechas.length} días de seguimiento desde el ${isoL(fechas[0])}.${hoyTxt} ${cierre}`;
+  /* Con Delivery_Promise_21 válida el banner se arma con LAS DOS hojas: días = fechas distintas
+     medidas entre ambas; desde cuándo y en cuántas referencias/familias se amplió; y el reparto
+     del último día de la hoja ampliada (el plazo con más referencias + el resto: por nombre si
+     son ≤3, por plazo con conteo si son más). Nombre = Modelo + Talle tal como sale en la tabla
+     de 21 de abajo, para que cada frase se pueda verificar ahí. Sin esa hoja (vacía o inválida)
+     queda el texto anterior, solo con Delivery_Promise. */
+  const r21=cleanRows(rows21||[]);
+  if(dp21Valido(r21)){
+    const f21=[...new Set(r21.map(r=>(r.Fecha||"").trim()).filter(f=>/^\d{4}-\d{2}-\d{2}$/.test(f)))].sort();
+    const ult21=f21[f21.length-1], hoy21=r21.filter(r=>(r.Fecha||"").trim()===ult21), grp21={};
+    hoy21.forEach(r=>{ const mn=numES(r.DP_min), mx=numES(r.DP_max);
+      if(mn==null||mx==null) return; const k=mn+"-"+mx;
+      (grp21[k]=grp21[k]||{mn,mx,refs:[]}).refs.push(`${(r.Modelo||"").trim()} ${(r.Talle||"").trim().replace(/x/i,"×")}`.trim()); });
+    const gs21=Object.values(grp21).sort((a,b)=>b.refs.length-a.refs.length||a.mn-b.mn||a.mx-b.mx);
+    const n21=gs21.reduce((s,g)=>s+g.refs.length,0);
+    if(f21.length && n21){
+      const todas=[...new Set([...fechas,...f21])].sort();
+      const fams=new Set(hoy21.map(r=>(r.Familia||"").trim()).filter(Boolean)).size;
+      const y=a=>a.length>1?a.slice(0,-1).join(", ")+" y "+a[a.length-1]:a[0];
+      const top=gs21[0], resto=gs21.slice(1), nResto=n21-top.refs.length;
+      let rep=`${top.refs.length} de las ${n21} ${top.refs.length===1?"promete":"prometen"} ${top.mn}-${top.mx} días`;
+      if(nResto) rep+=", y "+(nResto<=3
+        ? resto.map(g=>`${y(g.refs)} en ${g.mn}-${g.mx} días`).join("; ")
+        : y(resto.map(g=>`${g.refs.length} en ${g.mn}-${g.mx} días`)));
+      bannerTxt=`El plazo de entrega que ve el comprador en la ficha lleva ${todas.length} días de seguimiento desde el ${isoL(todas[0])}; desde el ${isoL(f21[0])} se mide en ${n21} referencias de ${fams===1?"1 familia":`las ${fams} familias`}. Al ${isoL(ult21)}, ${rep}. ${cierre}`;
+    }
+  }
   const banner=`<div class="dp-banner">
-    <p>El plazo de entrega que ve el comprador en la ficha lleva ${fechas.length} días de seguimiento desde el ${isoL(fechas[0])}.${hoyTxt} Seguimos midiendo a diario y lo cruzamos con las ventas para medir cuánto pesa en el cierre.</p>
+    <p>${bannerTxt}</p>
     </div>`;
   /* Orden de referencias = orden de aparición en la hoja (se pega por volumen, top primero).
      Si la hoja gana una columna Units_30d con dato para TODAS, esa manda. */
