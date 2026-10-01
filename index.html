@@ -1573,6 +1573,8 @@ function renderDiario(rows){
    esta tab cliente-facing renderizaría justamente eso. */
 const DP_NOMBRE={"serene hybrid":"Serene"};   // el resto se muestra tal cual
 const DP_COLS=["Fecha","Modelo","Talle","DP_min","DP_max"];
+const DP_COLS_21=["Fecha","Familia","Modelo","Talle","Child_ASIN","Entrega_texto","DP_min","DP_max","BSR_Hogar","BSR_Colchones","Precio"];
+const dp21Valido = rows => Array.isArray(rows) && rows.length>0 && ["Fecha","Familia","Modelo","Talle","DP_min","DP_max"].every(k=>k in rows[0]);
 const dpValido = rows => Array.isArray(rows) && rows.length>0 && DP_COLS.every(k=>k in rows[0]);
 const dpRef = r => {
   const m=(r.Modelo||"").trim();
@@ -1588,11 +1590,12 @@ const dpDiaSem = f => {const m=String(f||"").match(/(\d{4})-(\d{2})-(\d{2})/);
 const dpFecha = f => {const m=String(f||"").match(/(\d{4})-(\d{2})-(\d{2})/); return m?`${+m[3]} ${MESORD[+m[2]-1]}`:String(f||"");};
 /* Encabezado en dos lineas: la fecha no se ensancha, asi que la tabla no gana scroll extra. */
 const dpFechaTh = f => {const d=dpDiaSem(f); return `${dpFecha(f)}${d?`<span class="dp-dia">${d}</span>`:""}`;};
-function renderEntrega(rows){
+function renderEntrega(rows, rows21){
   const el=document.getElementById("entrega");
   if(!el) return;
   rows=cleanRows(rows);
-  if(!dpValido(rows)){ el.innerHTML=emptyState("Seguimiento en preparación"); return; }
+  /* La tabla de 21 refs es independiente: se dibuja aunque la hoja principal falte. */
+  if(!dpValido(rows)){ el.innerHTML=emptyState("Seguimiento en preparación"); renderEntrega21(rows21, el); return; }
   /* Banner descriptivo: SOLO lo que el propio cuadro muestra, para que el cliente pueda
      verificar cada frase mirando las columnas. Al 17-sep van 24 dias medidos y cuatro
      ciclos de deterioro; el texto los resume como "varias etapas" en vez de numerarlos,
@@ -1635,7 +1638,7 @@ function renderEntrega(rows){
   const celda={};
   rows.forEach(r=>{ const mn=numES(r.DP_min), mx=numES(r.DP_max);
     celda[dpRef(r)+"|"+(r.Fecha||"").trim()] = (mn!=null&&mx!=null) ? `${mn}-${mx} días` : "—"; });
-  if(!fechas.length || !orden.length){ el.innerHTML=emptyState("Seguimiento en preparación"); return; }
+  if(!fechas.length || !orden.length){ el.innerHTML=emptyState("Seguimiento en preparación"); renderEntrega21(rows21, el); return; }
   el.innerHTML = banner + `<div style="overflow-x:auto"><table class="tbl" id="entrega-t">
     <thead><tr><th>Referencia</th>${fechas.map(f=>`<th class="num">${dpFechaTh(f)}</th>`).join("")}</tr></thead>
     <tbody>${orden.map((k,i)=>`<tr>
@@ -1643,6 +1646,71 @@ function renderEntrega(rows){
       ${fechas.map(f=>`<td class="num dp-c">${celda[k+"|"+f]||"—"}</td>`).join("")}
     </tr>`).join("")}</tbody></table></div>
     <div class="pricefoot">Cada celda es el plazo que ve el comprador ese día. Se mide a diario; la lectura junto a la conversión llega con más días acumulados.</div>`;
+  renderEntrega21(rows21, el);
+}
+/* ── Entrega · seguimiento ampliado 21 referencias (hoja "Delivery_Promise_21") ──────────
+   Snapshot de la ÚLTIMA fecha, agrupado por Familia. Child_ASIN viene en la hoja y NUNCA se
+   muestra (Modo B). BSR y Precio pasan por numES: el Sheet puede traer "1.234" o "229,95". */
+function renderEntrega21(rows, elParent){
+  if(!elParent) return;
+  rows = cleanRows(rows||[]);
+  if(!dp21Valido(rows)){
+    elParent.insertAdjacentHTML("beforeend",
+      `<div class="dp-banner" style="margin-top:2rem"><p>Seguimiento ampliado (21 referencias) en preparación.</p></div>`);
+    return;
+  }
+  const fechas=[...new Set(rows.map(r=>(r.Fecha||"").trim()).filter(Boolean))].sort();
+  const ult = fechas[fechas.length-1];
+  const hoy = rows.filter(r=>(r.Fecha||"").trim()===ult);
+  const familias=[...new Set(hoy.map(r=>(r.Familia||"").trim()).filter(Boolean))];
+  const ent = n => n!=null ? Math.round(n).toLocaleString("es-ES") : "—";
+
+  let html = `<div style="margin-top:2.5rem">
+    <h3 style="font-size:.85rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--verde);margin-bottom:.5rem">
+      Seguimiento ampliado · 21 referencias · desde 30-sep-2026
+    </h3>
+    <p style="font-size:.78rem;color:var(--gris);margin-bottom:1rem">
+      Plazo de entrega + BSR · snapshot del ${dpFecha(ult)} · fuente: Amazon.es deslogueado + Helium 10 · BSR es de familia, no de variante individual.
+    </p>
+    <div style="overflow-x:auto"><table class="tbl">
+      <thead><tr>
+        <th>Familia</th>
+        <th>Modelo</th>
+        <th>Talle</th>
+        <th class="num">Entrega</th>
+        <th class="num">Días</th>
+        <th class="num">BSR Hogar</th>
+        <th class="num">BSR Colchones</th>
+        <th class="num">Precio €</th>
+      </tr></thead>
+      <tbody>`;
+
+  familias.forEach(fam => {
+    const refs = hoy.filter(r=>(r.Familia||"").trim()===fam);
+    refs.forEach((r,i) => {
+      const mn=numES(r.DP_min), mx=numES(r.DP_max);
+      const dias = (mn!=null&&mx!=null) ? `${mn}-${mx} días` : "—";
+      const pr = numES(r.Precio);
+      const precio = pr!=null ? pr.toFixed(2).replace(".",",") : "—";
+      const flag = (mx!=null && mx>8) ? ` style="color:var(--rojo);font-weight:600"` : "";
+      html += `<tr>
+        <td class="cn"${i===0?` style="font-weight:600"`:""}>${i===0?fam:""}</td>
+        <td class="cn">${(r.Modelo||"").trim()}</td>
+        <td class="cn">${(r.Talle||"").trim().replace(/x/i,"×")}</td>
+        <td class="num">${(r.Entrega_texto||"").trim()||"—"}</td>
+        <td class="num dp-c"${flag}>${dias}</td>
+        <td class="num">${ent(numES(r.BSR_Hogar))}</td>
+        <td class="num">${ent(numES(r.BSR_Colchones))}</td>
+        <td class="num">${precio}</td>
+      </tr>`;
+    });
+  });
+
+  html += `</tbody></table></div>
+    <div class="pricefoot">Días en rojo = plazo &gt; 8 días desde hoy. BSR tomado del widget Helium 10 (nivel familia).</div>
+    </div>`;
+
+  elParent.insertAdjacentHTML("beforeend", html);
 }
 function renderPrecios(rows){
   const tb=document.querySelector("#precios tbody");
@@ -2031,10 +2099,10 @@ function renderMoM(momMod, entrega){
 async function boot(){
   let d = {...DATA};
   d.bitacora=[]; d.funnel=[]; d.precios=[]; d.modelos=[]; d.campanasView=DATA.campanas;
-  d.veredicto=[]; d.mom=[]; d.yoy=[]; d.ventanas=[]; d.embudo=[]; d.entrega=[]; d.nature=[]; d.referencias=[]; d.accionesRef=[]; d.dppush=[]; d.momMod=[];
+  d.veredicto=[]; d.mom=[]; d.yoy=[]; d.ventanas=[]; d.embudo=[]; d.entrega=[]; d.entrega21=[]; d.nature=[]; d.referencias=[]; d.accionesRef=[]; d.dppush=[]; d.momMod=[];
   let mode="snapshot";
   if(SHEET_ID){
-    const names=["WoW_KPIs","Acciones_PPC","Bitacora","Funnel_Etapas","Veredicto","MoM_KPIs","YoY_Negocio","Modelos_Ventanas","Funnel","Delivery_Promise","Nature_Campanas","Referencias_Stock","Acciones_Referencias","DP_Push","MoM_Modelos"];
+    const names=["WoW_KPIs","Acciones_PPC","Bitacora","Funnel_Etapas","Veredicto","MoM_KPIs","YoY_Negocio","Modelos_Ventanas","Funnel","Delivery_Promise","Nature_Campanas","Referencias_Stock","Acciones_Referencias","DP_Push","MoM_Modelos","Delivery_Promise_21"];
     const res=await Promise.allSettled(names.map(n=>fetchSheet(n)));
     const val=i=>res[i].status==="fulfilled"?res[i].value:null;
     /* OJO: "Funnel_Etapas" (índice 3) es la hoja vieja del tab Funnel oculto;
@@ -2045,7 +2113,7 @@ async function boot(){
          · "Modelos_WoW"     (27-ago)
          · "Precios_Impacto" (27-ago) — pestaña vacía; el tab Precios ya estaba disabled
          · "Campanas_ASINs"  (27-ago) — tab oculta por fuga de ASINs; no se descarga */
-    const wow=val(0),acc=val(1),bita=val(2),fun=val(3),ver=val(4),momS=val(5),yoyS=val(6),venS=val(7),embS=val(8),dpS=val(9),natS=val(10),refS=val(11),accS=val(12),dppS=val(13),momModS=val(14);   // dpS/natS/refS/accS/dppS/momModS: agregados al FINAL, no renumeran lo anterior
+    const wow=val(0),acc=val(1),bita=val(2),fun=val(3),ver=val(4),momS=val(5),yoyS=val(6),venS=val(7),embS=val(8),dpS=val(9),natS=val(10),refS=val(11),accS=val(12),dppS=val(13),momModS=val(14),dp21S=val(15);   // dpS/natS/refS/accS/dppS/momModS/dp21S: agregados al FINAL, no renumeran lo anterior
     let ok=0; const total=names.length;
     /* GUARDA, misma razón que la de acciones de abajo: sin este else, un fetch caído o una
        hoja vacía dejaban d.wow con el snapshot hardcodeado — "18-24 may" / "25-31 may" se
@@ -2069,6 +2137,8 @@ async function boot(){
     /* dpValido() y no .length: si la pestaña no existe, gviz devuelve la 1ª hoja del Sheet
        (Campanas_ASINs) — no vacía, pero con otro esquema. No cuenta como cargada. */
     if(dpS&&dpValido(cleanRows(dpS))){ d.entrega=cleanRows(dpS); ok++; }
+    /* dp21Valido(), misma razón: sin la pestaña gviz devuelve la 1ª hoja del Sheet. */
+    if(dp21S&&dp21Valido(cleanRows(dp21S))){ d.entrega21=cleanRows(dp21S); ok++; }
     /* natValido()/refValido() y no .length, por la misma razon que dpS: si la pestana no
        existe todavia en el Sheet, gviz devuelve la 1ra hoja (Campanas_ASINs) — no vacia,
        pero con otro esquema. Sin la guarda el contador la daria por cargada y el render
@@ -2111,7 +2181,7 @@ async function boot(){
   //   línea, quitar los display:none del botón y la <section>, y sanear Modo B en mapCampanas.
   renderKanban(d.acciones);
   renderDiario(d.bitacora);
-  renderEntrega(d.entrega);
+  renderEntrega(d.entrega, d.entrega21);
   /* renderPrecios() retirado con su <section> (18-sep): querySelector("#precios tbody") devolveria
      null y el tb.innerHTML de la primera linea cortaria boot() antes de los render de abajo. */
   renderFunnel(d.funnel);
