@@ -1682,6 +1682,7 @@ function renderEntrega21(rows, elParent){
         <th class="num">BSR Hogar</th>
         <th class="num">BSR Colchones</th>
         <th class="num">Precio €</th>
+        <th class="num">Stock</th>
       </tr></thead>
       <tbody>`;
 
@@ -1702,6 +1703,7 @@ function renderEntrega21(rows, elParent){
         <td class="num">${ent(numES(r.BSR_Hogar))}</td>
         <td class="num">${ent(numES(r.BSR_Colchones))}</td>
         <td class="num">${precio}</td>
+        <td class="num">${(r.Disponible||"").trim()||"—"}</td>
       </tr>`;
     });
   });
