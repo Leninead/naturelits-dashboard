@@ -70,81 +70,26 @@ card en vez de una fila. Al 100 % entra en una línea.
 
 ---
 
-## 📅 MoM (`renderMoM`) — reporte mensual julio vs agosto
+## 📅 Mensual — tab MoM retirado (1-oct-2026)
 
-Tab **"MoM"** del grupo PPC, justo después de *Comparativa*. Cuatro bloques verticales, cada
-uno con **su propia guarda**: si una hoja falla, ese bloque cae a empty-state y los otros siguen.
+El tab **"MoM"** (reporte julio vs agosto) **se retiró el 1-oct-2026**: panel, `renderMoM`, la
+guarda `momModValido`, los estilos `.mom-*` y la carga de la hoja `MoM_Modelos`. El informe
+mensual se entrega fuera del panel; el flujo está en el `CLAUDE.md` del repo reporting, sección
+*Informe mensual (MoM)*.
 
-| Bloque | Fuente | Qué dibuja |
-|---|---|---|
-| Encuadre | texto fijo en el HTML | `.famv-banner` con la lectura del mes |
-| Indicadores generales | `MoM_KPIs` (`val(5)`) | `compTableHTML` con las 2 últimas filas por `periodMonthIdx` — la misma tabla que *Comparativa → Mes* |
-| Por modelo | `MoM_Modelos` (`val(14)`, guarda `momModValido`) | tabla horizontal 7 modelos × 2 meses + Δ ROAS y Δ Ventas tot |
-| Plazo de entrega día × referencia | `Delivery_Promise` (`val(9)`, ya validada por `dpValido`) | 20 días × 6 referencias, celda `DP_min-DP_max` |
+**Lo que sigue vivo:** *Comparativa → Mes (MoM)*. Lee `MoM_KPIs` (`val(5)`, `COMPMOM`) y dibuja
+`compTableHTML` con las 2 últimas filas ordenadas por `periodMonthIdx`.
 
-Cada bloque lleva un `<p class="mom-intro">` de análisis entre el título y la tabla.
+**Índices de `names`:** al salir `MoM_Modelos`, **`Delivery_Promise_21` pasó del índice 15 al
+14** (`dp21S=val(14)`). El array quedó en 15 hojas. La hoja `MoM_Modelos` puede seguir en el
+Sheet: el panel ya no la descarga.
 
-### Por modelo
+### Pendientes de `MoM_KPIs` (siguen aplicando a Comparativa → Mes)
 
-- Filas ordenadas por **Ventas_Totales de agosto**, desc. Cruza la fila de cada modelo para
-  `MOM_MES_PREV` / `MOM_MES_CUR` (`"2026-07"` / `"2026-08"`).
-- **Columna Modelo sticky** (`.wt.mom-mod td:first-child`) con fondo sólido `var(--blanco)`.
-  La celda de las filas atenuadas **no usa `opacity`**: en una celda sticky eso vuelve
-  translúcido el fondo y se ve lo que scrollea debajo. Se atenúa por `color`.
-- **Serene Hybrid** = hero (`MOM_HERO`, fondo `--verde-bg`). **Xstar y Palace** = cola
-  (`MOM_COLA`, atenuados). Serene Hybrid va con su nombre acá, a diferencia del tab Entrega,
-  donde `DP_NOMBRE` lo muestra como "Serene".
-- **Vacío ≠ 0**: `Pct_Ads` vacío (Palace ago, ventas 0) → `"—"`, chequeado **antes** de
-  formatear. ROAS 0 con inversión es un 0 real → `0,00x`.
-- ROAS con **dos decimales y coma** (`momX`), no `fmtVal("x")`, que usa `toFixed(1)` con punto.
-- El ROAS por modelo es **solo publicidad de producto**; el del encuadre y el de Indicadores
-  generales incluye todos los formatos. La nota al pie lo aclara — no quitarla.
-
-### Plazo de entrega
-
-- Lee **`DP_min` / `DP_max` numéricos, nunca `Entrega_texto`**: cambió de formato el 06-sep
-  (`"2-3 septiembre"` → `"22-23 de septiembre"`).
-- Columnas en el orden de `MOM_DP_REFS`; una referencia nueva en la hoja se agrega al final.
-- **Jueves y viernes en ámbar** (`.mom-jv`), día calculado con `dpDiaSem` desde la fecha ISO.
-- Ventana **congelada** `MOM_DP_DESDE` → `MOM_DP_HASTA` (25-ago → 13-sep): la hoja sigue
-  sumando días, el informe no.
-
-### Pasar al mes siguiente — nada se deriva solo
-
-`MOM_MES_PREV` / `MOM_MES_CUR`, la ventana `MOM_DP_*`, el título *"Julio vs Agosto 2026"*,
-los cabezales `jul` / `ago` de la tabla y **los 4 textos de análisis** están escritos a mano.
-Cambiar de mes es tocar todo eso.
-
-### Hoja `MoM_Modelos` — carga manual
-
-- **No hay script de carga al Sheet.** `scripts/mom_modelos.py` (repo reporting) genera
-  `datos/procesado/mom_modelos_<meses>.csv` con punto decimal y filas TOTAL / Sin clasificar;
-  el TSV que se pega sale de ese CSV **sin TOTAL ni Sin clasificar** y con **coma decimal**.
-- 13 columnas: `Mes | Modelo | Inv_SP | Ventas_Ads | ROAS_SP | Ventas_Totales | Pct_Ads |
-  Sesiones | Unidades | CVR | BuyBox | Share_Inv | Share_Ventas`.
-- **`Mes` como TEXTO** (`"2026-07"`): Sheets lo convierte en fecha al pegar. Formatear la
-  columna A como *Texto sin formato* **y reescribir** los valores — aplicar el formato no
-  convierte fechas ya existentes. Verificar por gviz JSON que venga `type: string`.
-- **Ratios como fracción** (`0,0148`), igual que `MoM_KPIs`.
-- **Serene Hybrid** sale de un override por child en `guardian/data/asin_map.yaml` (repo
-  reporting): `B0CNVYKZL1` lleva `modelo: Serene Hybrid` con `familia: Serene` intacta, para
-  no tocar break-even ni umbrales del Guardián.
-
-### Textos — Modo B
-
-Client-safe: sin siglas internas, sin nombres de herramientas, sin nombres de campaña, sin
-causas que el dato no sostenga. Antes de commitear un texto nuevo, buscar las vetadas en el
-panel servido.
-
-### Pendientes (13-sep)
-
-1. ✅ *(24-sep: el banner ahora se calcula desde el cuadro, ver abajo)* **Banner del tab Entrega desalineado**: sigue diciendo que el patrón jueves/viernes no se
-   puede afirmar, y el tab MoM ya lo afirma (3 semanas: jue 12,3 · vie 12,7 días contra
-   10,3–11,7 el resto).
-2. **BuyBox de cuenta en `MoM_KPIs` J5/J6 cargado a mano** (97,4 % / 98,1 %): el by-date no
+1. **BuyBox de cuenta en `MoM_KPIs` J5/J6 cargado a mano** (97,4 % / 98,1 %): el by-date no
    trae la columna. Al cargar un mes nuevo hay que completarlo a mano o queda en 0 y el panel
    muestra "0%".
-3. **SB/SD del `Ad_Sales` de `MoM_KPIs` no reproducibles**: salen de campaign reports mensuales
+2. **SB/SD del `Ad_Sales` de `MoM_KPIs` no reproducibles**: salen de campaign reports mensuales
    no congelados. Ver `docs/deuda-reporting.md` en el repo reporting.
 
 ---
@@ -183,7 +128,7 @@ calcula de la hoja**; el texto fijo del HTML queda solo como respaldo.
   coincidencia**. Dos filas con la misma etapa → gana la primera, en silencio.
 - **Si una pestaña no existe, gviz NO devuelve 404**: devuelve la primera hoja del documento.
   Por eso cada módulo tiene su **guarda de esquema** (`dpValido`, `natValido`, `refValido`,
-  `venValido`, `dppValido`, `momModValido`) en vez de comprobar `.length`.
+  `venValido`, `dppValido`, `dp21Valido`) en vez de comprobar `.length`.
 - **Cuidado con los nombres de las guardas.** `DP_COLS` es de `Delivery_Promise`; la de
   `DP_Push` es `DPP_COLS`. Redeclarar un `const` en este ámbito **no rompe un módulo, rompe el
   `<script>` entero** — es error de parseo y la página queda en blanco.
